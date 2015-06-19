@@ -1,0 +1,24 @@
+---
+
+- name: Add Docker repo key
+  apt_key: keyserver=keyserver.ubuntu.com id=36A1D7869245C8950F966E92D8576A8BA88D21E9
+
+- name: Add Docker repo
+  apt_repository: repo='deb https://get.docker.com/ubuntu docker main' state=present
+
+- name: Install Docker
+  apt: pkg=lxc-docker state=installed
+
+- name: Add users to docker group
+  user: name={{item}} groups=docker append=yes
+  with_items: docker_users
+
+
+- name: Install Compose
+  get_url: url="https://github.com/docker/compose/releases/download/{{compose_version}}/docker-compose-{{ansible_system}}-{{ansible_machine}}" dest=/usr/local/bin/docker-compose
+
+- name: Set Compose permissions
+  file: path=/usr/local/bin/docker-compose mode=a+x
+
+
+

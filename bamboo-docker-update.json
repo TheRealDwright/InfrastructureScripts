@@ -1,0 +1,42 @@
+{
+    "variables": {
+        "aws_access_key": "{{env `AWS_ACCESS_KEY_ID`}}",
+        "aws_secret_key": "{{env `AWS_SECRET_ACCESS_KEY`}}"
+    },
+
+    "builders": [{
+        "type": "amazon-ebs",
+        "access_key": "{{user `aws_access_key`}}",
+        "secret_key": "{{user `aws_secret_key`}}",
+        "region": "us-east-1",
+        "source_ami": "ami-1c247d74",
+        "instance_type": "m1.medium",
+        "ssh_username": "ubuntu",
+        "ami_name": "bamboo-ami {{timestamp}}",
+        "tags": {
+            "Name": "Stock Bamboo Ubuntu with updated Docker/Compose",
+            "business_unit": "S&Mktg:Developer Advocacy",
+            "service": "opensource.atlassian.com",
+            "resource_owner": "ssmith",
+            "service_tier": "app",
+            "environment": "prod"
+        }
+
+    }],
+
+    "provisioners": [
+        {
+            "type": "shell", 
+            "execute_command": "echo 'vagrant'|{{.Vars}} sudo -S -E bash '{{.Path}}'",
+            "scripts": [
+                "scripts/ansible.sh"
+            ]
+        },
+        {
+            "type": "ansible-local",
+            "playbook_dir": ".",
+            "playbook_file": "bamboo-docker-update.yml"
+        }
+    ]
+}
+
