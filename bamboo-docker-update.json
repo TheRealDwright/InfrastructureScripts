@@ -27,7 +27,6 @@
     "provisioners": [
         {
             "type": "shell", 
-            "execute_command": "{{.Vars}} sudo -S -E bash '{{.Path}}'",
             "scripts": [
                 "scripts/ansible.sh"
             ]
