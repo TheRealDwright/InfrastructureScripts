@@ -6,10 +6,6 @@
     - docker_users:
         - bamboo
 
-    - bamboo_agent_capabilities:
-        - ['docker', '/usr/bin/docker']
-        - ['docker.compose',    '/usr/local/bin/docker-compose']
-
   roles:
     - ubuntu-common
     - docker
