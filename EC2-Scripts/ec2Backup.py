@@ -1,3 +1,6 @@
+#Author Daniel Wright
+#Last Updated: 20160212
+
 import boto3
 
 ec = boto3.client('ec2')
