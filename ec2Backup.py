@@ -21,7 +21,7 @@ print "Found %d instances that need backing up" % len(instances)
 
 for instance in instances:
     for dev in instance['BlockDeviceMappings']:
-        if dev.get('Ebs', None) is None:
+        if dev.get('Ebs') is None:
             # skip anything that does not have EBS volumes
             continue
         vol_id = dev['Ebs']['VolumeId']
