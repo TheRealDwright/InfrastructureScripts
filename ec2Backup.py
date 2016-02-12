@@ -2,7 +2,6 @@ import boto3
 
 ec = boto3.client('ec2')
 
-
 reservations = ec.describe_instances(
     #Filter all instances with the key:pair of AutoBackup:True
     Filters=[
