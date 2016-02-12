@@ -13,22 +13,24 @@ iam = boto3.client('iam')
 #daily.
 
 #Snapshot prune Function. Add this to a Lambda Function by putting the below block
-# In a Lambda Function (def lambda_handler(event, context):
+# In a Lambda Function: def lambda_handler(event, context):
 
-account_ids = list()
-try:
-    iam.get_user()
-except Exception as e:
-# use the exception message to to display account ID the function executes under
-    account_ids.append(re.search(r'(arn:aws:sts::)([0-9]+)', str(e)).groups()[1])
 
-deleteOnDate = datetime.date.today().strftime('%Y-%m-%d')
-filters = [
-    {'Name': 'tag-key', 'Values': ['deleteOnDate']},
-    {'Name': 'tag-value', 'Values': [deleteOnDate]},
-]
-snapshot_response = ec.describe_snapshots(OwnerIds=account_ids, Filters=filters)
+def lambda_handler(event, context):
+    account_ids = list()
+    try:
+        iam.get_user()
+    except Exception as e:
+    # use the exception message to to display account ID the function executes under
+        account_ids.append(re.search(r'(arn:aws:sts::)([0-9]+)', str(e)).groups()[1])
 
-for snap in snapshot_response['Snapshots']:
-    print "Deleting snapshot %s" % snap['SnapshotId']
-    ec.delete_snapshot(SnapshotId=snap['SnapshotId'])
+    deleteOnDate = datetime.date.today().strftime('%Y-%m-%d')
+    filters = [
+        {'Name': 'tag-key', 'Values': ['deleteOnDate']},
+        {'Name': 'tag-value', 'Values': [deleteOnDate]},
+    ]
+    snapshot_response = ec.describe_snapshots(OwnerIds=account_ids, Filters=filters)
+
+    for snap in snapshot_response['Snapshots']:
+        print "Deleting snapshot %s" % snap['SnapshotId']
+        ec.delete_snapshot(SnapshotId=snap['SnapshotId'])
