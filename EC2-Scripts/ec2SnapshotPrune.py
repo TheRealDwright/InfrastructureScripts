@@ -27,7 +27,7 @@ def lambda_handler(event, context):
     deleteOnDate = datetime.date.today().strftime('%Y-%m-%d')
     filters = [
         {'Name': 'tag-key', 'Values': ['deleteOnDate']},
-        {'Name': 'tag-value', 'Values': [deleteOnDate]},
+        {'Name': 'tag-value', 'Values': ['deleteOnDate']},
     ]
     snapshot_response = ec.describe_snapshots(OwnerIds=account_ids, Filters=filters)
 
