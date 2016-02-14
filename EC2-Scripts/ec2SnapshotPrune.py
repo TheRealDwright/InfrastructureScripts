@@ -13,8 +13,6 @@ iam = boto3.client('iam')
 #daily.
 
 #Snapshot prune Function. Add this to a Lambda Function by putting the below block
-# In a Lambda Function: def lambda_handler(event, context):
-
 
 def lambda_handler(event, context):
     account_ids = list()
