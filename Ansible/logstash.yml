@@ -1,7 +1,7 @@
 ---
 - name: setup variables for logstash installation
   set_fact:
-    elasticsearch_host: search-prod-simple-logstash-fzwbnrdb4thfyrfalfrosggtqa.ap-southeast-2.es.amazonaws.com
+    elasticsearch_host: {ElasticSearch_Endpoint}
     elasticsearch_port: 80
 
 - name: setup cloudwatch custom scripts
