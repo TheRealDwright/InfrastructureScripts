@@ -1,0 +1,35 @@
+---
+
+- name: install libwww-perl
+  apt: name=libwww-perl state=present
+  sudo: true
+
+- name: install libdatetime-perl
+  apt: name=libdatetime-perl state=present
+  sudo: true
+
+- name: check if the cloudwatch scripts are present
+  stat: path=/opt/aws-scripts-mon/
+  register: cloudwatchfile
+
+- name: download cloudwatch scripts
+  get_url: url=http://aws-cloudwatch.s3.amazonaws.com/downloads/CloudWatchMonitoringScripts-1.2.1.zip dest=/opt/cloudwatchscripts.zip mode=0440
+  when: cloudwatchfile.stat.isdir == false
+  sudo: true
+
+- name: unzip cloudwatch scripts
+  unarchive: src=/opt/cloudwatchscripts.zip dest=/opt creates=yes copy=no
+  when: cloudwatchfile.stat.isdir == false
+  sudo: true
+
+- name: clean up scripts zip
+  file: path=/opt/cloudwatchscripts.zip state=absent
+  sudo: true
+
+- name: set up cron job for custom cloudwatch metrics
+  sudo: true
+  cron:
+    name: Cloudwatch Scripts
+    minute: 5
+    user: root
+    job: "/opt/aws-scripts-mon/mon-put-instance-data.pl --mem-util --disk-space-util --disk-path=/ --from-cron"
