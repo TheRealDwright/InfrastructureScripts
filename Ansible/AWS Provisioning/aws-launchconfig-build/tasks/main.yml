@@ -1,0 +1,19 @@
+---
+- name: set launch configuration name
+  set_fact:
+    launch_config_name: "thumbor-{{ ansible_date_time.iso8601 | regex_replace('[^a-zA-Z0-9]', '-') }}"
+
+- name: Create Launch Configuration
+  ec2_lc:
+    region: "{{ region }}"
+    name: "{{ launch_config_name }}"
+    image_id: "{{ ami.image_id }}"
+    key_name: ansible.deploy
+    instance_type: ""{{ instance_type }}""
+    security_groups: ""{{ security_group }}""
+    volumes:
+      - device_name: /dev/xvda
+        device_type: gp2
+        volume_size: 20
+        delete_on_termination: true
+    instance_monitoring: yes

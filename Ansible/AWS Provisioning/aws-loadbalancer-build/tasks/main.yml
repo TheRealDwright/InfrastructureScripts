@@ -1,0 +1,22 @@
+---
+- name: Configure Elastic Load Balancers
+  ec2_elb_lb:
+    region: "{{ region }}"
+    name: thumbor
+    state: present
+    security_group_ids: "{{ security_group }}"
+    subnets: "{{ subnets }}"
+    connection_draining_timeout: 60
+    listeners:
+      - protocol: http
+        load_balancer_port: 80
+        instance_port: 80
+    health_check:
+      ping_protocol: http
+      ping_port: 80
+      ping_path: "/healthcheck"
+      response_timeout: 2
+      interval: 5
+      unhealthy_threshold: 2
+      healthy_threshold: 2
+  register: elb_result

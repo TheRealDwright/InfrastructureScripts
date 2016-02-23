@@ -1,0 +1,49 @@
+---
+- name: Find existing instance(s)
+  hosts: "tag_Name_ami_build"
+  gather_facts: false
+  tags: find
+  tasks:
+    - name: Add to old_ami_build group
+      group_by:
+        key: old_ami_build
+
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    region: ap-southeast-2
+    instance_type: t2.medium
+    ami_type: amazonlinux
+  roles:
+    - role: aws-launch
+      name: ami_build
+
+- hosts: ami_build
+  remote_user: ec2-user
+  vars:
+    environment: testing
+  roles:
+    - thumbor
+
+- hosts: ami_build
+  connection: local
+  gather_facts: yes
+  roles:
+    - aws-ami-build
+    - aws-launchconfig-build
+    - aws-loadbalancer-build
+    - aws-autoscaling-build
+
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  roles:
+    - aws-launchconfig-cleanup
+    - aws-ami-cleanup
+
+- hosts: old_ami_build
+  connection: local
+  gather_facts: no
+  roles:
+    - aws-ami-terminate

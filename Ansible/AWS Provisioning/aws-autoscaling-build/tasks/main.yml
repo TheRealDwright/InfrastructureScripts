@@ -1,0 +1,84 @@
+---
+- name: Retrieve current Auto Scaling Group properties
+  command: "aws --region {{ region }} autoscaling describe-auto-scaling-groups --auto-scaling-group-names thumbor"
+  register: asg_properties_result
+
+- name: Set asg_properties variable from JSON output if the Auto Scaling Group already exists
+  set_fact:
+    asg_properties: "{{ (asg_properties_result.stdout | from_json).AutoScalingGroups[0] }}"
+  when: (asg_properties_result.stdout | from_json).AutoScalingGroups | count
+
+- name: Configure Auto Scaling Group and perform rolling deploy
+  ec2_asg:
+    region: "{{ region }}"
+    name: thumbor
+    launch_config_name: "{{ launch_config_name }}"
+    vpc_zone_identifier: "{{ vpc_subnets }}"
+    health_check_type: ELB
+    health_check_period: 300
+    desired_capacity: 2
+    replace_all_instances: yes
+    replace_batch_size: 2
+    min_size: 2
+    max_size: 10
+    load_balancers:
+      - thumbor
+    state: present
+  register: asg_result
+
+- name: Configure Scaling Policies
+  ec2_scaling_policy:
+    region: "{{ region }}"
+    name: "{{ item.name }}"
+    asg_name: thumbor
+    state: present
+    adjustment_type: "{{ item.adjustment_type }}"
+    min_adjustment_step: "{{ item.min_adjustment_step }}"
+    scaling_adjustment: "{{ item.scaling_adjustment }}"
+    cooldown: "{{ item.cooldown }}"
+  with_items:
+    - name: "Increase Group Size"
+      adjustment_type: "ChangeInCapacity"
+      scaling_adjustment: +1
+      min_adjustment_step: 1
+      cooldown: 180
+    - name: "Decrease Group Size"
+      adjustment_type: "ChangeInCapacity"
+      scaling_adjustment: -1
+      min_adjustment_step: 1
+      cooldown: 300
+  register: sp_result
+
+- name: Determine Metric Alarm configuration
+  set_fact:
+    metric_alarms:
+      - name: "thumbor-ScaleUp"
+        comparison: ">="
+        threshold: 50.0
+        alarm_actions:
+          - "{{ sp_result.results[0].arn }}"
+      - name: "thumbor-ScaleDown"
+        comparison: "<="
+        threshold: 20.0
+        alarm_actions:
+          - "{{ sp_result.results[1].arn }}"
+
+- debug: var=max_size
+
+- name: Configure Metric Alarms and link to Scaling Policies
+  ec2_metric_alarm:
+    region: "{{ region }}"
+    name: "{{ item.name }}"
+    state: present
+    metric: "CPUUtilization"
+    namespace: "AWS/EC2"
+    statistic: "Average"
+    comparison: "{{ item.comparison }}"
+    threshold: "{{ item.threshold }}"
+    period: 60
+    evaluation_periods: 5
+    unit: "Percent"
+    dimensions:
+      AutoScalingGroupName: "thumbor_asg"
+    alarm_actions: "{{ item.alarm_actions }}"
+  with_items: metric_alarms
