@@ -2,22 +2,13 @@
   set_fact:
     regions:
       ap-southeast-2:
-        zone: ap-southeast-2a
-        keypair: ansible.deploy
+        zone: "{{ availability_zone }}"
+        keypair: "{{ key_name }}"
         vpc_subnet_id: ""{{ vpc_subnet }}""
         group_id: "{{ security_group }}"
-      ap-southeast-1:
-        zone: ap-southeast-1a
-        keypair: ansible.deploy
-        security_groups: "{{ security_group_name }}"
     volumes:
       ubuntu:
         - device_name: /dev/sda1
-          device_type: gp2
-          volume_size: 20
-          delete_on_termination: true
-      amazonlinux:
-        - device_name: /dev/xvda
           device_type: gp2
           volume_size: 20
           delete_on_termination: true

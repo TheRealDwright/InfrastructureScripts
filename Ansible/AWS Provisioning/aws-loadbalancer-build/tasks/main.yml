@@ -2,7 +2,7 @@
 - name: Configure Elastic Load Balancers
   ec2_elb_lb:
     region: "{{ region }}"
-    name: thumbor
+    name: "{{ app }}"
     state: present
     security_group_ids: "{{ security_group }}"
     subnets: "{{ subnets }}"
@@ -14,7 +14,7 @@
     health_check:
       ping_protocol: http
       ping_port: 80
-      ping_path: "/healthcheck"
+      ping_path: "{{ health_check }}"
       response_timeout: 2
       interval: 5
       unhealthy_threshold: 2

@@ -3,7 +3,7 @@
   ec2_ami:
     region: "{{ region }}"
     instance_id: "{{ ec2_id }}"
-    name: "thumbor-{{ ansible_date_time.iso8601 | regex_replace('[^a-zA-Z0-9]', '-') }}"
+    name: "{{ app }}-{{ ansible_date_time.iso8601 | regex_replace('[^a-zA-Z0-9]', '-') }}"
     wait: yes
     state: present
   register: ami

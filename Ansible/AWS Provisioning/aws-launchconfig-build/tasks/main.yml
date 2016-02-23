@@ -1,14 +1,14 @@
 ---
 - name: set launch configuration name
   set_fact:
-    launch_config_name: "thumbor-{{ ansible_date_time.iso8601 | regex_replace('[^a-zA-Z0-9]', '-') }}"
+    launch_config_name: "{{ app }}-{{ ansible_date_time.iso8601 | regex_replace('[^a-zA-Z0-9]', '-') }}"
 
 - name: Create Launch Configuration
   ec2_lc:
     region: "{{ region }}"
     name: "{{ launch_config_name }}"
     image_id: "{{ ami.image_id }}"
-    key_name: ansible.deploy
+    key_name: ""{{ key_name }}""
     instance_type: ""{{ instance_type }}""
     security_groups: ""{{ security_group }}""
     volumes:

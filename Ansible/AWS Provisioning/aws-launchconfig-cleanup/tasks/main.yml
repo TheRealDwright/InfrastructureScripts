@@ -1,7 +1,7 @@
 ---
 - lc_find:
     region: "{{ region }}"
-    name_regex: "thumbor-.*"
+    name_regex: "{{ app }}-.*"
     sort: yes
     sort_end: -3
   register: old_lc_result
