@@ -11,9 +11,11 @@
 - name: Configure Auto Scaling Group and perform rolling deploy
   ec2_asg:
     region: "{{ region }}"
-    name: "{{ app }}"
+    name: "{{ app_name }}"
     launch_config_name: "{{ launch_config_name }}"
-    vpc_zone_identifier: "{{ vpc_subnets }}"
+    vpc_zone_identifier:
+      - "{{ asg_subnet_a }}"
+      - "{{ asg_subnet_b }}"
     health_check_type: ELB
     health_check_period: 300
     desired_capacity: 2
@@ -22,7 +24,7 @@
     min_size: 2
     max_size: 10
     load_balancers:
-      - elb_result
+      - "{{ app_name }}"
     state: present
   register: asg_result
 
@@ -30,7 +32,7 @@
   ec2_scaling_policy:
     region: "{{ region }}"
     name: "{{ item.name }}"
-    asg_name: thumbor
+    asg_name: "{{ app_name }}"
     state: present
     adjustment_type: "{{ item.adjustment_type }}"
     min_adjustment_step: "{{ item.min_adjustment_step }}"
@@ -52,12 +54,12 @@
 - name: Determine Metric Alarm configuration
   set_fact:
     metric_alarms:
-      - name: "{{ app }}-ScaleUp"
+      - name: "{{ app_name }}-ScaleUp"
         comparison: ">="
         threshold: 50.0
         alarm_actions:
           - "{{ sp_result.results[0].arn }}"
-      - name: "{{ app }}-ScaleDown"
+      - name: "{{ app_name }}-ScaleDown"
         comparison: "<="
         threshold: 20.0
         alarm_actions:
@@ -77,6 +79,6 @@
     evaluation_periods: 5
     unit: "Percent"
     dimensions:
-      AutoScalingGroupName: asg_result
+      AutoScalingGroupName: "{{ app_name }}_asg"
     alarm_actions: "{{ item.alarm_actions }}"
   with_items: metric_alarms

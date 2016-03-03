@@ -1,19 +1,19 @@
 ---
 - name: set launch configuration name
   set_fact:
-    launch_config_name: "{{ app }}-{{ ansible_date_time.iso8601 | regex_replace('[^a-zA-Z0-9]', '-') }}"
+    launch_config_name: "{{ app_name }}-{{ ansible_date_time.iso8601 | regex_replace('[^a-zA-Z0-9]', '-') }}"
 
 - name: Create Launch Configuration
   ec2_lc:
     region: "{{ region }}"
     name: "{{ launch_config_name }}"
     image_id: "{{ ami.image_id }}"
-    key_name: ""{{ key_name }}""
-    instance_type: ""{{ instance_type }}""
-    security_groups: ""{{ security_group }}""
+    key_name: "{{ keypair }}"
+    instance_type: "{{ launch_instance_type }}"
+    security_groups: "{{ launch_security_group }}"
     volumes:
-      - device_name: /dev/xvda
-        device_type: gp2
-        volume_size: 20
+      - device_name: "{{ device_name }}"
+        device_type: "{{ device_type }}"
+        volume_size: "{{ volume_size }}"
         delete_on_termination: true
     instance_monitoring: yes

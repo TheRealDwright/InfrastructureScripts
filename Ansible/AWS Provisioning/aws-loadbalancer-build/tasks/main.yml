@@ -2,19 +2,21 @@
 - name: Configure Elastic Load Balancers
   ec2_elb_lb:
     region: "{{ region }}"
-    name: "{{ app }}"
+    name: "{{ app_name }}"
     state: present
-    security_group_ids: "{{ security_group }}"
-    subnets: "{{ subnets }}"
+    security_group_ids: "{{ elb_security_group_id}}"
+    subnets:
+      - "{{ elb_subnet_a }}"
+      - "{{ elb_subnet_b }}"
     connection_draining_timeout: 60
     listeners:
-      - protocol: http
-        load_balancer_port: 80
-        instance_port: 80
+      - protocol: "{{ elb_protocol }}"
+        load_balancer_port: "{{ elb_load_balancer_port }}"
+        instance_port: "{{ elb_instance_listener_port }}"
     health_check:
-      ping_protocol: http
-      ping_port: 80
-      ping_path: "{{ health_check }}"
+      ping_protocol: "{{ elb_health_check_protocol }}"
+      ping_port: "{{ elb_health_check_port }}"
+      ping_path: "{{ elb_health_check }}"
       response_timeout: 2
       interval: 5
       unhealthy_threshold: 2

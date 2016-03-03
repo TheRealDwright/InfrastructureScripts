@@ -1,4 +1,7 @@
 ---
+- name: set up app variables
+  include_vars: "{{ playbook_dir }}/roles/{{ app_name }}/vars/main.yml"
+  
 - name: Terminate old instance(s)
   ec2:
     instance_ids: "{{ ec2_id }}"

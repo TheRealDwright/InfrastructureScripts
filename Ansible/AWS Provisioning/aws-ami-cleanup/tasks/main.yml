@@ -2,7 +2,7 @@
 - ec2_ami_find:
     region: "{{ region }}"
     owner: self
-    name: "thumbor-*"
+    name: "{{ app_name }}-*"
     sort: name
     sort_end: -3
   register: old_ami_result

@@ -1,0 +1,41 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          supervisord
+# Required-Start:    $remote_fs
+# Required-Stop:     $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Supervisor init script
+# Description:       Supervisor init script
+### END INIT INFO
+
+# Supervisord auto-start
+#
+# description: Auto-starts supervisord
+# processname: supervisord
+# pidfile: /var/run/supervisord.pid
+
+SUPERVISORD=/usr/local/bin/supervisord
+SUPERVISORCTL=/usr/local/bin/supervisorctl
+ARGS="-c /etc/supervisord.conf"
+
+case $1 in
+start)
+        echo -n "Starting supervisord: "
+        $SUPERVISORD $ARGS
+        echo
+        ;;
+stop)
+        echo -n "Stopping supervisord: "
+        $SUPERVISORCTL shutdown
+        echo
+        ;;
+restart)
+        echo -n "Stopping supervisord: "
+        $SUPERVISORCTL shutdown
+        echo
+        echo -n "Starting supervisord: "
+        $SUPERVISORD $ARGS
+        echo
+        ;;
+esac

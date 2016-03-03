@@ -1,17 +1,20 @@
+---
+- name: set up app variables
+  include_vars: "{{ playbook_dir }}/roles/{{ app_name }}/vars/main.yml"
+
 - name: setup the amazon region variables
   set_fact:
     regions:
       ap-southeast-2:
-        zone: "{{ availability_zone }}"
-        keypair: "{{ key_name }}"
-        vpc_subnet_id: ""{{ vpc_subnet }}""
-        group_id: "{{ security_group }}"
+        zone: "{{ build_zone }}"
+        keypair: "{{ keypair }}"
+        vpc_subnet_id: "{{ build_subnet }}"
+        group_id: "{{ build_security_group }}"
     volumes:
-      ubuntu:
-        - device_name: /dev/sda1
-          device_type: gp2
-          volume_size: 20
-          delete_on_termination: true
+        - device_name: "{{ device_name }}"
+          device_type: "{{ device_type }}"
+          volume_size: "{{ volume_size }}"
+          delete_on_termination: "{{ delete_on_termination }}"
 
 - name: Search for the latest Ubuntu 14.04 AMI
   ec2_ami_find:
@@ -40,15 +43,15 @@
 - name: Launch new instance
   ec2:
     region: "{{ region }}"
-    keypair: "{{ regions[region].keypair }}"
-    zone: "{{ regions[region].zone }}"
-    vpc_subnet_id: "{{ regions[region].vpc_subnet_id }}"
-    group_id: "{{ regions[region].group_id }}"
+    keypair: "{{ keypair }}"
+    zone: "{{ build_zone }}"
+    vpc_subnet_id: "{{ build_subnet }}"
+    group_id: "{{ build_security_group }}"
     image: "{{ ami_result.results[0].ami_id }}"
-    instance_type: "{{ instance_type }}"
+    instance_type: "{{ build_instance_type }}"
     instance_tags:
       Name: "{{ name }}"
-    volumes: "{{ volumes[ami_type] }}"
+    volumes: "{{ volumes }}"
     wait: yes
   register: ec2
 
