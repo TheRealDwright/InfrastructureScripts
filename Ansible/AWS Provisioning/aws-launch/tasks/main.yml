@@ -16,29 +16,8 @@
           volume_size: "{{ volume_size }}"
           delete_on_termination: "{{ delete_on_termination }}"
 
-- name: Search for the latest Ubuntu 14.04 AMI
-  ec2_ami_find:
-    region: "{{ region }}"
-    name: "ubuntu/images/hvm-ssd/ubuntu-trusty-14.04-amd64-server-*"
-    owner: 099720109477
-    sort: name
-    sort_order: descending
-    sort_end: 1
-    no_result_action: fail
-  register: ami_result
-  when: ami_type == "ubuntu"
-
-- name: Search for the latest Amazon Linux AMI
-  ec2_ami_find:
-    region: "{{ region }}"
-    name: "amzn-ami-hvm-2015.09.2.x86_64-gp2"
-    owner: 137112412989
-    sort: name
-    sort_order: descending
-    sort_end: 1
-    no_result_action: fail
-  register: ami_result
-  when: ami_type == "amazonlinux"
+- name: Search for the latest AMI
+  include: "{{ ami_type }}.yml"
 
 - name: Launch new instance
   ec2:

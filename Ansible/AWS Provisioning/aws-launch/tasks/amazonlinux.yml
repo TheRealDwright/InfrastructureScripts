@@ -1,0 +1,11 @@
+---
+- name: Search for the latest Amazon Linux AMI
+  ec2_ami_find:
+    region: "{{ region }}"
+    name: "amzn-ami-hvm-2015.09.2.x86_64-gp2"
+    owner: 137112412989
+    sort: name
+    sort_order: descending
+    sort_end: 1
+    no_result_action: fail
+  register: ami_result
