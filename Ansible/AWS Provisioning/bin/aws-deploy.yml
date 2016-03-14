@@ -7,7 +7,7 @@
       name: "{{ app_name }}_ami_build"
 
 - hosts: "{{ app_name }}_ami_build"
-  remote_user: ec2-user
+  remote_user: "{{ remote_user }}"
   vars:
     environment: "{{ target_env }}"
   roles:

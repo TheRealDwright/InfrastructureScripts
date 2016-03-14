@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-
-ansible-playbook aws-deploy.yml --extra-vars "target_env=$1 app_name=$2" -i ec2.py \
- --private-key=~/.ssh/ansible.deploy.pem
