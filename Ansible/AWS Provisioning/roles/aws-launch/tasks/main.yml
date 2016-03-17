@@ -44,7 +44,7 @@
 - name: Wait for instance to boot
   wait_for:
     host: "{{ item.private_ip }}"
-    port: 22
+    port: "{{ ssh_port }}"
     delay: 30
     timeout: 300
     state: started
