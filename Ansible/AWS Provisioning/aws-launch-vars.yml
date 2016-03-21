@@ -1,0 +1,27 @@
+---
+build_instance_type: t2.medium
+launch_instance_type: t2.medium
+ami_type: Windows
+remote_user: remote_username
+region: ap-southeast-2
+build_zone: ap-southeast-2a
+keypair: keypair.name
+build_subnet: sg-xxxxxxxx
+build_security_group: sg-xxxxxxxx
+launch_security_group: sg-xxxxxxxx
+elb_security_group_id: sg-xxxxxxxx
+device_name: /dev/sda1
+device_type: gp2
+volume_size: 50
+delete_on_termination: true
+asg_subnet_a: subnet-xxxxxxxx
+asg_subnet_b: subnet-xxxxxxxx
+elb_subnet_a: subnet-xxxxxxxx
+elb_subnet_b: subnet-xxxxxxxx
+elb_health_check: /
+elb_health_check_port: 80
+elb_health_check_protocol: http
+elb_protocol: http
+elb_load_balancer_port: 80
+elb_instance_listener_port: 80
+ssh_port: 22

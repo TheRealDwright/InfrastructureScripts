@@ -1,0 +1,13 @@
+<powershell>
+net user /ADD "ansible_deploy" "{{ win_initial_password }}"
+net localgroup "administrators" "ansible_deploy" /add
+winrm quickconfig
+winrm e winrm/config/listener
+winrm set winrm/config/service/auth '@{Basic="True"}'
+winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+winrm get winrm/config
+winrm set winrm/config/client/auth '@{Basic="true"}'
+winrm set winrm/config/client '@{AllowUnencrypted="true"}'
+winrm set winrm/config/client '@{TrustedHosts="*"}'
+netsh advfirewall set allprofiles state off
+</powershell>

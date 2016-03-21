@@ -1,0 +1,71 @@
+---
+- name: Install IIS
+  win_feature:
+    name: "Web-Server"
+    state: present
+    restart: yes
+    include_sub_features: yes
+    include_management_tools: yes
+
+- name: setup IIS directory
+  win_file:
+    path: 'C:\sites\helloworld'
+    state: directory
+
+- name: setup IIS directory
+  win_file:
+    path: 'C:\sites\helloworld\wwwroot'
+    state: directory
+
+- name: setup Hello-World IIS directory
+  win_file:
+    path: 'C:\sites\helloworld\logs'
+    state: directory
+
+- name: set up IIS permisions on website directory
+  win_acl:
+    path: 'C:\sites'
+    user: 'IIS_IUSRS'
+    rights: 'FullControl'
+    type: 'allow'
+    state: 'present'
+    inherit: 'ContainerInherit, ObjectInherit'
+    propagation: 'InheritOnly'
+
+- name: set up user permisions on website directory
+  win_acl:
+    path: 'C:\sites'
+    user: 'Users'
+    rights: 'ReadAndExecute,Read,ListDirectory'
+    type: 'allow'
+    state: 'present'
+    inherit: 'ContainerInherit, ObjectInherit'
+    propagation: 'InheritOnly'
+
+- name: copy Hello-World html to IIS directory
+  win_template:
+    src: hello.html.j2
+    dest: 'C:\sites\helloworld\wwwroot\index.html'
+
+- name: set up helloworld application pool
+  win_iis_webapppool:
+    name: helloworld
+    state: started
+    attributes: managedRuntimeVersion:v4.0.30319
+
+- name: Hello-World IIS site
+  win_iis_website:
+    name: "helloworld"
+    state: started
+    port: 80
+    ip: "*"
+    hostname: localhost
+    application_pool: "helloworld"
+    physical_path: 'c:\sites\helloworld\wwwroot'
+    parameters: 'logfile.directory:c:\sites\helloworld\logs'
+  register: website
+
+- name: disable default website
+  win_iis_website:
+    name: "Default Web Site"
+    state: absent

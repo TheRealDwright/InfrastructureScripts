@@ -1,0 +1,6 @@
+---
+instance_type: t2.medium
+security_group_id:
+build_subnet:
+build_zone: ap-southeast-2a
+domain:
