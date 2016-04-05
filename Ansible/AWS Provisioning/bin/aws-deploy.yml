@@ -1,4 +1,13 @@
 ---
+- name: Find existing instance(s)
+  hosts: "tag_Name_{{ app_name }}_ami_build"
+  gather_facts: false
+  tags: find
+  tasks:
+    - name: Add to old_ami_build group
+      group_by:
+        key: old_ami_build
+
 - hosts: localhost
   connection: local
   gather_facts: true
@@ -12,7 +21,6 @@
     environment: "{{ target_env }}"
   roles:
     - "{{ app_name }}"
-
 
 - hosts: "{{ app_name }}_ami_build"
   connection: local
@@ -29,15 +37,6 @@
   roles:
     - aws-launchconfig-cleanup
     - aws-ami-cleanup
-
-- name: Find existing instance(s)
-  hosts: "tag_Name_{{ app_name }}_ami_build"
-  gather_facts: false
-  tags: find
-  tasks:
-    - name: Add to old_ami_build group
-      group_by:
-        key: old_ami_build
 
 - hosts: old_ami_build
   connection: local
