@@ -122,6 +122,20 @@
         "Domain": { "Ref": "VPC" }
       }
     },
+    "natGateway1": {
+      "Type": "AWS::EC2::NatGateway",
+      "Properties": {
+        "AllocationId": { "Fn::GetAtt": [ "EIP1", "AllocationId" ] },
+        "SubnetId": { "Ref": "publicSubnet1" }
+      }
+    },
+    "natGateway2": {
+      "Type": "AWS::EC2::NatGateway",
+        "Properties": {
+        "AllocationId": { "Fn::GetAtt": [ "EIP2", "AllocationId" ] },
+        "SubnetId": { "Ref": "publicSubnet2" }
+    }
+  },
     "publicSubnet1": {
       "Type": "AWS::EC2::Subnet",
       "Properties": {
@@ -254,21 +268,7 @@
       "Properties": {
         "RouteTableId": { "Ref": "privateRouteTable2" },
         "SubnetId": { "Ref": "dbSubnet2" }
-      },
-      "natGateway1": {
-        "Type": "AWS::EC2::NatGateway",
-        "Properties": {
-          "AllocationId": { "Fn::GetAtt": [ "EIP1", "AllocationId" ] },
-          "SubnetId": { "Ref": "publicSubnet1" }
-        }
-      },
-      "natGateway2": {
-        "Type": "AWS::EC2::NatGateway",
-          "Properties": {
-          "AllocationId": { "Fn::GetAtt": [ "EIP2", "AllocationId" ] },
-          "SubnetId": { "Ref": "publicSubnet2" }
-      }
-     }
+       }
     }
   }
 }
