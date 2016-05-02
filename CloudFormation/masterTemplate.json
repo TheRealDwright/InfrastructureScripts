@@ -1,0 +1,22 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description" : "Master CloudFormation Template Authored by Daniel Wright - http://iamaman.com.au",
+  "Parameters": {
+    "VPC": { "Fn::GetAtt" : [ "vpcCreate", "Outputs.VPC" ] },
+    "publicRouteTable": { "Fn::GetAtt" : [ "vpcCreate", "Outputs.publicRouteTable" ] },
+    "privateRouteTable1": { "Fn::GetAtt" : [ "vpcCreate", "Outputs.privateRouteTable1" ] },
+    "privateRouteTable2": { "Fn::GetAtt" : [ "vpcCreate", "Outputs.privateRouteTable2" ] },
+    "publicSubnet1": { "Fn::GetAtt" : [ "vpcCreate", "Outputs.publicSubnet1" ] },
+    "publicSubnet2": { "Fn::GetAtt" : [ "vpcCreate", "Outputs.publicSubnet2" ] },
+    "privateSubnet1": { "Fn::GetAtt" : [ "vpcCreate", "Outputs.privateSubnet1" ] },
+    "privateSubnet2": { "Fn::GetAtt" : [ "vpcCreate", "Outputs.privateSubnet2" ] },
+    "dbSubnet1": { "Fn::GetAtt" : [ "vpcCreate", "Outputs.dbSubnet1" ] },
+    "dbSubnet2": { "Fn::GetAtt" : [ "vpcCreate", "Outputs.dbSubnet2" ] },
+  "Resources": {
+    "vpcCreate": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "TemplateURL": "https://s3-ap-southeast-2.amazonaws.com/djwright-cloudformation-templates/highly-available-vpc.json"
+      }
+   }
+}
