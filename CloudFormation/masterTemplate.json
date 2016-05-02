@@ -12,6 +12,60 @@
     "privateSubnet2": { "Fn::GetAtt" : [ "vpcCreate", "Outputs.privateSubnet2" ] },
     "dbSubnet1": { "Fn::GetAtt" : [ "vpcCreate", "Outputs.dbSubnet1" ] },
     "dbSubnet2": { "Fn::GetAtt" : [ "vpcCreate", "Outputs.dbSubnet2" ] },
+  "Outputs": {
+    "VPC": {
+      "Description": "VPC ID",
+      "Value": { "Ref": "VPC" }
+    },
+    "publicRouteTable": {
+      "Description": "publicRouteTable ID",
+      "Value": { "Ref": "publicRouteTable" }
+    },
+    "privateRouteTable1": {
+      "Description": "privateRouteTable1 ID",
+      "Value": { "Ref": "privateRouteTable1" }
+    },
+    "privateRouteTable2": {
+      "Description": "privateRouteTable2 ID",
+      "Value": { "Ref": "privateRouteTable2" }
+    },
+    "natGateway1": {
+      "Description": "NAT Gateway 1 ID",
+      "Value": { "Ref": "natGateway1" }
+    },
+    "natGateway2": {
+      "Description": "NAT Gateway 2 ID",
+      "Value": { "Ref": "natGateway2" }
+    },
+    "internetGateway": {
+      "Description": "Internet Gateway 2 ID",
+      "Value": { "Ref": "internetGateway" }
+    },
+    "PublicSUbnet1": {
+      "Description": "Public Subnet/DMZ 1",
+      "Value": { "Ref": "publicSubnet1" }
+    },
+    "publicSubnet2": {
+      "Description": "Public Subnet/DMZ 2",
+      "Value": { "Ref": "publicSubnet2" }
+    },
+    "privateSubnet1": {
+      "Description": "Private Subnet 1",
+      "Value": { "Ref": "privateSubnet1" }
+    },
+    "privateSubnet2": {
+      "Description": "Private Subnet 2",
+      "Value": { "Ref": "privateSubnet2" }
+    },
+    "dbSubnet1": {
+      "Description": "Database Subnet 1",
+      "Value": { "Ref": "dbSubnet1" }
+    },
+    "dbSubnet2": {
+      "Description": "Database Subnet 2",
+      "Value": { "Ref": "dbSubnet2" }
+    }
+  },
   "Resources": {
     "vpcCreate": {
       "Type": "AWS::CloudFormation::Stack",
