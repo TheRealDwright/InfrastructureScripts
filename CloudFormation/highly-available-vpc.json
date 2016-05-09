@@ -90,6 +90,10 @@
     "dbSubnet2": {
       "Description": "Database Subnet 2",
       "Value": { "Ref": "dbSubnet2" }
+    },
+    "RDSSubnetGroup": {
+      "Description": "RDS Database Subnet Group",
+      "Value": { "Ref": "RDSSubnetGroup" }
     }
   },
   "Resources": {
@@ -269,6 +273,13 @@
         "RouteTableId": { "Ref": "privateRouteTable2" },
         "SubnetId": { "Ref": "dbSubnet2" }
        }
+    },
+    "RDSSubnetGroup":{
+      "Type": "AWS::RDS::DBSubnetGroup",
+      "Properties": {
+        "SubnetIds": [ { "Ref": "dbSubnet1" }, { "Ref": "dbSubnet2" } ],
+        "Tags" : [ {"key" : "Name", "value" : "RDSSubnetGroup"} ]
+      }
     }
   }
 }
