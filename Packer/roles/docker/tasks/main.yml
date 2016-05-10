@@ -1,21 +1,37 @@
 ---
+- name: install apt https transport
+  apt: name=apt-transport-https state=present
+  sudo: true
 
-- name: Add Docker repo key
-  apt_key: keyserver=keyserver.ubuntu.com id=36A1D7869245C8950F966E92D8576A8BA88D21E9
+- name: install apt ca-certificates
+  apt: name=ca-certificates state=present
+  sudo: true
 
-- name: Add Docker repo
-  apt_repository: repo='deb https://get.docker.com/ubuntu docker main' state=present
+- name: add apt key
+  apt_key:
+    keyserver: hkp://p80.pool.sks-keyservers.net:80
+    id: 58118E89F3A912897C070ADBF76221572C52609D
+  sudo: true
 
-- name: Install Docker
-  apt: pkg=lxc-docker state=installed
+- name: copy docker repository file
+  copy:
+    src: docker.list
+    dest: /etc/apt/sources.list.d/docker.list
+    mode: 0644
+  sudo: true
 
-- name: Add users to docker group
-  user: name={{item}} groups=docker append=yes
-  with_items: docker_users
+- name: update apt cache
+  apt: update_cache=yes
+  sudo: true
 
+- name: install docker-engine
+  apt: name=docker-engine state=present
+  sudo: true
 
-- name: Install Compose
-  get_url: url="https://github.com/docker/compose/releases/download/{{compose_version}}/docker-compose-{{ansible_system}}-{{ansible_machine}}" dest=/usr/local/bin/docker-compose
+- name: install pip
+  apt: name=python-pip state=present
+  sudo: true
 
-- name: Set Compose permissions
-  file: path=/usr/local/bin/docker-compose mode=a+x
+- name: Install docker-py
+  pip: name=docker-py
+  sudo: true
