@@ -18,7 +18,6 @@
             "service_tier": "test",
             "environment": "test"
         }
-
     }],
     "provisioners": [
         {
