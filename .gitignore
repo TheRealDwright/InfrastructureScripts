@@ -1,1 +1,7 @@
+<<<<<<< HEAD
 .DS_Store
+=======
+/packer_cache
+/aws_config.json
+/ec2_amazon-ebs.pem
+>>>>>>> e97082e58e99fe569f08ac61aba9d2bf02d752ad
