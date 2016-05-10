@@ -11,7 +11,7 @@
         "source_ami": "ami-6c14310f",
         "instance_type": "t2.micro",
         "ssh_username": "ubuntu",
-        "ami_name": "bamboo-ami {{timestamp}}",
+        "ami_name": "stock-ubuntu-{{timestamp}}",
         "tags": {
             "Name": "Stock Ubuntu",
             "resource_owner": "dwright",
