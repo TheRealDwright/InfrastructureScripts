@@ -88,7 +88,7 @@ resource "aws_main_route_table_association" "private_1" {
 
 resource "aws_main_route_table_association" "private_2" {
     vpc_id = "${aws_vpc.main.id}"
-    route_table_id = "${aws_route_table.prviate_2.id}"
+    route_table_id = "${aws_route_table.private_2.id}"
 }
 
 resource "aws_nat_gateway" "1" {
