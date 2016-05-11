@@ -76,19 +76,35 @@ resource "aws_route_table" "private_2" {
     }
 }
 
-resource "aws_main_route_table_association" "public" {
-    vpc_id = "${aws_vpc.main.id}"
+resource "aws_route_table_association" "public_1" {
     route_table_id = "${aws_route_table.public.id}"
+    subnet_id = "${aws_subnet.public_1.id}"
 }
 
-resource "aws_main_route_table_association" "private_1" {
-    vpc_id = "${aws_vpc.main.id}"
+resource "aws_route_table_association" "public_2" {
+    route_table_id = "${aws_route_table.public.id}"
+    subnet_id = "${aws_subnet.public_2.id}"
+}
+
+
+resource "aws_route_table_association" "private_1" {
     route_table_id = "${aws_route_table.private_1.id}"
+    subnet_id = "${aws_subnet.private_1.id}"
 }
 
-resource "aws_main_route_table_association" "private_2" {
-    vpc_id = "${aws_vpc.main.id}"
+resource "aws_route_table_association" "private_2" {
     route_table_id = "${aws_route_table.private_2.id}"
+    subnet_id = "${aws_subnet.private_2.id}"
+}
+
+resource "aws_route_table_association" "db_1" {
+    route_table_id = "${aws_route_table.private_1.id}"
+    subnet_id = "${aws_subnet.db_1.id}"
+}
+
+resource "aws_route_table_association" "db_2" {
+    route_table_id = "${aws_route_table.private_2.id}"
+    subnet_id = "${aws_subnet.db_2.id}"
 }
 
 resource "aws_nat_gateway" "1" {
