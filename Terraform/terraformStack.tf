@@ -73,7 +73,17 @@ resource "aws_main_route_table_association" "public" {
     route_table_id = "${aws_route_table.public.id}"
 }
 
+resource "aws_nat_gateway" "one" {
+    allocation_id = "aws_eip.two"
 
+  depends_on = ["aws_internet_gateway.gw"]
+}
+
+resource "aws_nat_gateway" "two" {
+    allocation_id = "aws_eip.two"
+
+  depends_on = ["aws_internet_gateway.gw",]
+}
 #--------------------------------------------------------------
 # Security Group
 #--------------------------------------------------------------
