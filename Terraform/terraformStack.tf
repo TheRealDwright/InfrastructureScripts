@@ -92,13 +92,13 @@ resource "aws_main_route_table_association" "private_2" {
 }
 
 resource "aws_nat_gateway" "1" {
-    allocation_id = "aws_eip.1"
+    allocation_id = "${aws_eip.1.id}"
     subnet_id = "${aws_subnet.public_1.id}"
   depends_on = ["aws_internet_gateway.gw"]
 }
 
 resource "aws_nat_gateway" "2" {
-    allocation_id = "aws_eip.2"
+    allocation_id = "${aws_eip.2.id}"
     subnet_id = "${aws_subnet.public_2.id}"
   depends_on = ["aws_internet_gateway.gw",]
 }
