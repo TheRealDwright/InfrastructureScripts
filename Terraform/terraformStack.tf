@@ -10,10 +10,10 @@ resource "aws_internet_gateway" "gw" {
     vpc_id = "${aws_vpc.main.id}"
 }
 
-resource "aws_eip" "one" {
+resource "aws_eip" "1" {
 }
 
-resource "aws_eip" "two" {
+resource "aws_eip" "2" {
 }
 
 resource "aws_subnet" "public_1" {
@@ -64,7 +64,15 @@ resource "aws_route_table" "private_1" {
     vpc_id = "${aws_vpc.main.id}"
     route {
         cidr_block = "0.0.0.0/0"
-        gateway_id = "${aws_internet_gateway.gw.id}"
+        gateway_id = "${aws_nat_gateway.1.id}"
+    }
+}
+
+resource "aws_route_table" "private_2" {
+    vpc_id = "${aws_vpc.main.id}"
+    route {
+        cidr_block = "0.0.0.0/0"
+        gateway_id = "${aws_nat_gateway.2.id}"
     }
 }
 
@@ -73,14 +81,24 @@ resource "aws_main_route_table_association" "public" {
     route_table_id = "${aws_route_table.public.id}"
 }
 
-resource "aws_nat_gateway" "one" {
-    allocation_id = "aws_eip.two"
+resource "aws_main_route_table_association" "private_1" {
+    vpc_id = "${aws_vpc.main.id}"
+    route_table_id = "${aws_route_table.private_1.id}"
+}
+
+resource "aws_main_route_table_association" "private_2" {
+    vpc_id = "${aws_vpc.main.id}"
+    route_table_id = "${aws_route_table.prviate_2.id}"
+}
+
+resource "aws_nat_gateway" "1" {
+    allocation_id = "aws_eip.1"
     subnet_id = "aws_subnet.public_1"
   depends_on = ["aws_internet_gateway.gw"]
 }
 
-resource "aws_nat_gateway" "two" {
-    allocation_id = "aws_eip.two"
+resource "aws_nat_gateway" "2" {
+    allocation_id = "aws_eip.2"
     subnet_id = "aws_subnet.public_2"
   depends_on = ["aws_internet_gateway.gw",]
 }
