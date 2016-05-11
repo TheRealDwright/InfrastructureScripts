@@ -75,13 +75,13 @@ resource "aws_main_route_table_association" "public" {
 
 resource "aws_nat_gateway" "one" {
     allocation_id = "aws_eip.two"
-
+    subnet_id = "aws_subnet.public_1"
   depends_on = ["aws_internet_gateway.gw"]
 }
 
 resource "aws_nat_gateway" "two" {
     allocation_id = "aws_eip.two"
-
+    subnet_id = "aws_subnet.public_2"
   depends_on = ["aws_internet_gateway.gw",]
 }
 #--------------------------------------------------------------
