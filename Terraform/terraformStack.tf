@@ -11,11 +11,9 @@ resource "aws_internet_gateway" "gw" {
 }
 
 resource "aws_eip" "one" {
-  vpc                       = true
 }
 
 resource "aws_eip" "two" {
-  vpc                       = true
 }
 
 resource "aws_subnet" "public_1" {
