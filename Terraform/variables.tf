@@ -55,5 +55,4 @@ variable "db_subnet_cidr_2" {
 variable "ubuntu_ami" {
   description = "Base AMI to launch the instances with"
   default = "ami-9abea4fb"
-  }
 }
