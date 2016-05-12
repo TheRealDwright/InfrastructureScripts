@@ -52,10 +52,8 @@ variable "db_subnet_cidr_2" {
   default     = "10.120.210.0/22"
 }
 /* Ubuntu 14.04 amis by region */
-variable "amis" {
+variable "ubuntu_ami" {
   description = "Base AMI to launch the instances with"
-  default = {
-    us-west-1 = "ami-06116566"
-    us-west-2 = "ami-9abea4fb"
+  default = "ami-9abea4fb"
   }
 }

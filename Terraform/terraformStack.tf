@@ -16,6 +16,14 @@ resource "aws_eip" "1" {
 resource "aws_eip" "2" {
 }
 
+resource "aws_eip" "3" {
+  instance = "${aws_instance.bastion_1.id}"
+}
+
+resource "aws_eip" "4" {
+  instance = "${aws_instance.bastion_2.id}"
+}
+
 resource "aws_subnet" "public_1" {
     vpc_id = "${aws_vpc.main.id}"
     cidr_block = "${var.public_subnet_cidr_1}"
@@ -64,6 +72,9 @@ resource "aws_route_table" "public" {
         cidr_block = "0.0.0.0/0"
         gateway_id = "${aws_internet_gateway.gw.id}"
     }
+    tags {
+        Name = "public_route_table"
+    }
 }
 
 resource "aws_route_table" "private_1" {
@@ -72,6 +83,9 @@ resource "aws_route_table" "private_1" {
         cidr_block = "0.0.0.0/0"
         gateway_id = "${aws_nat_gateway.1.id}"
     }
+    tags {
+        Name = "private_route_table_1"
+    }
 }
 
 resource "aws_route_table" "private_2" {
@@ -79,6 +93,9 @@ resource "aws_route_table" "private_2" {
     route {
         cidr_block = "0.0.0.0/0"
         gateway_id = "${aws_nat_gateway.2.id}"
+    }
+    tags {
+        Name = "private_route_table_2"
     }
 }
 
@@ -143,6 +160,58 @@ resource "aws_security_group" "allow_all" {
       protocol = "-1"
       cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+resource "aws_security_group" "bastion" {
+  name = "bastion_security_group"
+  description = "Allow SSH inbound traffic"
+  vpc_id = "${aws_vpc.main.id}"
+
+  ingress {
+      from_port = 22
+      to_port = 22
+      protocol = "tcp"
+      cidr_blocks = ["180.214.93.64/32"]
+  }
+
+  egress {
+      from_port = 0
+      to_port = 0
+      protocol = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "bastion_1" {
+    ami = "${var.ubuntu_ami}"
+    instance_type = "t2.micro"
+    key_name = "cameron-test"
+    security_groups = ["${aws_security_group.bastion.id}"]
+    subnet_id = "${aws_subnet.public_1.id}"
+    root_block_device {
+      volume_type = "gp2"
+      volume_size = "8"
+      delete_on_termination = "true"
+    }
+    tags {
+        Name = "bastion_1"
+    }
+}
+
+resource "aws_instance" "bastion_2" {
+    ami = "${var.ubuntu_ami}"
+    instance_type = "t2.micro"
+    key_name = "cameron-test"
+    security_groups = ["${aws_security_group.bastion.id}"]
+    subnet_id = "${aws_subnet.public_2.id}"
+    root_block_device {
+      volume_type = "gp2"
+      volume_size = "8"
+      delete_on_termination = "true"
+    }
+    tags {
+        Name = "bastion_2"
+    }
 }
 
 resource "atlas_artifact" "helloworld"{
