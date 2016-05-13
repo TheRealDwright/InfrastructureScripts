@@ -38,64 +38,6 @@
       "Description": "Enter the DB Subnet 2 CIDR Block"
     }
   },
-  "Outputs": {
-    "VPC": {
-      "Description": "VPC ID",
-      "Value": { "Ref": "VPC" }
-    },
-    "publicRouteTable": {
-      "Description": "publicRouteTable ID",
-      "Value": { "Ref": "publicRouteTable" }
-    },
-    "privateRouteTable1": {
-      "Description": "privateRouteTable1 ID",
-      "Value": { "Ref": "privateRouteTable1" }
-    },
-    "privateRouteTable2": {
-      "Description": "privateRouteTable2 ID",
-      "Value": { "Ref": "privateRouteTable2" }
-    },
-    "natGateway1": {
-      "Description": "NAT Gateway 1 ID",
-      "Value": { "Ref": "natGateway1" }
-    },
-    "natGateway2": {
-      "Description": "NAT Gateway 2 ID",
-      "Value": { "Ref": "natGateway2" }
-    },
-    "internetGateway": {
-      "Description": "Internet Gateway 2 ID",
-      "Value": { "Ref": "internetGateway" }
-    },
-    "PublicSUbnet1": {
-      "Description": "Public Subnet/DMZ 1",
-      "Value": { "Ref": "publicSubnet1" }
-    },
-    "publicSubnet2": {
-      "Description": "Public Subnet/DMZ 2",
-      "Value": { "Ref": "publicSubnet2" }
-    },
-    "privateSubnet1": {
-      "Description": "Private Subnet 1",
-      "Value": { "Ref": "privateSubnet1" }
-    },
-    "privateSubnet2": {
-      "Description": "Private Subnet 2",
-      "Value": { "Ref": "privateSubnet2" }
-    },
-    "dbSubnet1": {
-      "Description": "Database Subnet 1",
-      "Value": { "Ref": "dbSubnet1" }
-    },
-    "dbSubnet2": {
-      "Description": "Database Subnet 2",
-      "Value": { "Ref": "dbSubnet2" }
-    },
-    "RDSSubnetGroup": {
-      "Description": "RDS Database Subnet Group",
-      "Value": { "Ref": "RDSSubnetGroup" }
-    }
-  },
   "Resources": {
     "VPC": {
       "Type": "AWS::EC2::VPC",
@@ -278,8 +220,66 @@
       "Type": "AWS::RDS::DBSubnetGroup",
       "Properties": {
         "SubnetIds": [ { "Ref": "dbSubnet1" }, { "Ref": "dbSubnet2" } ],
-        "Tags" : [ {"key" : "Name", "value" : "RDSSubnetGroup"} ]
+        "DBSubnetGroupDescription" : "RDSSubnetGroup"
       }
+    }
+  },
+  "Outputs": {
+    "VPC": {
+      "Description": "VPC ID",
+      "Value": { "Ref": "VPC" }
+    },
+    "publicRouteTable": {
+      "Description": "publicRouteTable ID",
+      "Value": { "Ref": "publicRouteTable" }
+    },
+    "privateRouteTable1": {
+      "Description": "privateRouteTable1 ID",
+      "Value": { "Ref": "privateRouteTable1" }
+    },
+    "privateRouteTable2": {
+      "Description": "privateRouteTable2 ID",
+      "Value": { "Ref": "privateRouteTable2" }
+    },
+    "natGateway1": {
+      "Description": "NAT Gateway 1 ID",
+      "Value": { "Ref": "natGateway1" }
+    },
+    "natGateway2": {
+      "Description": "NAT Gateway 2 ID",
+      "Value": { "Ref": "natGateway2" }
+    },
+    "internetGateway": {
+      "Description": "Internet Gateway 2 ID",
+      "Value": { "Ref": "internetGateway" }
+    },
+    "publicSubnet1": {
+      "Description": "Public Subnet/DMZ 1",
+      "Value": { "Ref": "publicSubnet1" }
+    },
+    "publicSubnet2": {
+      "Description": "Public Subnet/DMZ 2",
+      "Value": { "Ref": "publicSubnet2" }
+    },
+    "privateSubnet1": {
+      "Description": "Private Subnet 1",
+      "Value": { "Ref": "privateSubnet1" }
+    },
+    "privateSubnet2": {
+      "Description": "Private Subnet 2",
+      "Value": { "Ref": "privateSubnet2" }
+    },
+    "dbSubnet1": {
+      "Description": "Database Subnet 1",
+      "Value": { "Ref": "dbSubnet1" }
+    },
+    "dbSubnet2": {
+      "Description": "Database Subnet 2",
+      "Value": { "Ref": "dbSubnet2" }
+    },
+    "RDSSubnetGroup": {
+      "Description": "RDS Database Subnet Group",
+      "Value": { "Ref": "RDSSubnetGroup" }
     }
   }
 }

@@ -1,0 +1,104 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+	"Description" : "Deploy an Autoscaled Group of Instances. Authored by Daniel Wright - http://iamaman.com.au",
+  "Parameters" : {
+    "ec2ImageParameter" : {
+      "Type" : "String",
+      "Default": "ami-e83a4288"
+    },
+    "VPC" : {
+      "Type" : "AWS::EC2::VPC::Id"
+    },
+    "publicSubnet1" : {
+      "Type" : "AWS::EC2::Subnet::Id"
+    },
+    "publicSubnet2" : {
+      "Type" : "AWS::EC2::Subnet::Id"
+    },
+    "privateSubnet1" : {
+      "Type" : "AWS::EC2::Subnet::Id"
+    },
+    "privateSubnet2" : {
+      "Type" : "AWS::EC2::Subnet::Id"
+    }
+  },
+  "Resources" : {
+    "allowAllSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "Tags" : {
+          "Key" : "Name",
+          "Value" : "allow_all"
+        },
+        "GroupDescription" : "Allow All Traffic",
+        "VpcId" : {"Ref" : "VPC"},
+        "SecurityGroupIngress" : [{
+             "IpProtocol" : "tcp",
+             "FromPort" : "-1",
+             "ToPort" : "-1",
+             "CidrIp" : "0.0.0.0/0"
+          }],
+        "SecurityGroupEgress" : [{
+          "IpProtocol" : "tcp",
+          "FromPort" : "-1",
+          "ToPort" : "-1",
+          "CidrIp" : "0.0.0.0/0"
+        }]
+      }
+    },
+    "ElasticLoadBalancer": {
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+      "Properties": {
+        "Subnets" : [ { "Ref" : "publicSubnet1" }, { "Ref" : "publicSubnet2" } ],
+        "Listeners": [{
+          "LoadBalancerPort": "80",
+          "InstancePort": "8080",
+          "Protocol": "HTTP"
+        }],
+        "HealthCheck": {
+          "Target": "HTTP:8080/",
+          "HealthyThreshold": "3",
+          "UnhealthyThreshold": "5",
+          "Interval": "30",
+          "Timeout": "5"
+        },
+        "SecurityGroups" : [ { "Ref": "allowAllSecurityGroup" } ]
+      }
+    },
+    "launchConfiguration" : {
+      "Type" : "AWS::AutoScaling::LaunchConfiguration",
+      "Properties" : {
+        "KeyName" : "NT",
+        "ImageId" : { "Ref" : "ec2ImageParameter" },
+        "SecurityGroups" : [ { "Ref" : "allowAllSecurityGroup" } ],
+        "InstanceType" : "t2.micro"
+      }
+    },
+    "autoScalingGroup" : {
+      "UpdatePolicy" : {
+        "AutoScalingRollingUpdate" : {
+          "MinInstancesInService" : "1",
+          "MaxBatchSize" : "1",
+          "PauseTime" : "PT12M5S"
+        }
+      },
+      "Type" : "AWS::AutoScaling::AutoScalingGroup",
+      "Properties" : {
+        "VPCZoneIdentifier": [ { "Ref" : "privateSubnet1" }, { "Ref" : "privateSubnet2" } ],
+        "LaunchConfigurationName" : { "Ref" : "launchConfiguration" },
+        "MinSize" : "2",
+        "MaxSize" : "4",
+        "LoadBalancerNames" : [ { "Ref" : "ElasticLoadBalancer" } ],
+        "MetricsCollection": [
+           {
+              "Granularity": "1Minute",
+              "Metrics": [
+                 "GroupMinSize",
+                 "GroupMaxSize"
+              ]
+           }
+        ]
+      }
+    }
+ }
+}
