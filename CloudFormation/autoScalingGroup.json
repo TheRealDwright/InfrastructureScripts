@@ -53,7 +53,7 @@
 				}]
 			}
 		},
-		"ElasticLoadBalancer": {
+		"elasticLoadBalancer": {
 			"Type": "AWS::ElasticLoadBalancing::LoadBalancer",
 			"Properties": {
 				"Subnets": [{
@@ -100,6 +100,13 @@
 				}
 			},
 			"Type": "AWS::AutoScaling::AutoScalingGroup",
+			"UpdatePolicy": {
+				"AutoScalingRollingUpdate": {
+					"MinInstancesInService": "1",
+					"MaxBatchSize": "1",
+					"PauseTime": "PT12M5S"
+				}
+			},
 			"Properties": {
 				"VPCZoneIdentifier": [{
 					"Ref": "privateSubnet1"
@@ -112,7 +119,7 @@
 				"MinSize": "2",
 				"MaxSize": "4",
 				"LoadBalancerNames": [{
-					"Ref": "ElasticLoadBalancer"
+					"Ref": "elasticLoadBalancer"
 				}],
 				"MetricsCollection": [{
 					"Granularity": "1Minute",
@@ -121,6 +128,32 @@
 						"GroupMaxSize"
 					]
 				}]
+			}
+		}
+	},
+	"Outputs": {
+		"allowAllSecurityGroup": {
+			"Description": "Securtiy Group Allowing All Traffic",
+			"Value": {
+				"Ref": "allowAllSecurityGroup"
+			}
+		},
+		"elasticLoadBalancer": {
+			"Description": "ELB for AutoScaling Group",
+			"Value": {
+				"Ref": "elasticLoadBalancer"
+			}
+		},
+		"launchConfiguration": {
+			"Description": "Launch Config for AutoScaling Group",
+			"Value": {
+				"Ref": "launchConfiguration"
+			}
+		},
+		"autoScalingGroup": {
+			"Description": "AutoScaling Group Containing Instances",
+			"Value": {
+				"Ref": "autoScalingGroup"
 			}
 		}
 	}
