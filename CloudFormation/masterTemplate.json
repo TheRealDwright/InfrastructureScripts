@@ -1,25 +1,37 @@
 {
-  "AWSTemplateFormatVersion": "2010-09-09",
-  "Description" : "Master CloudFormation Template Authored by Daniel Wright - http://iamaman.com.au",
-  "Resources" : {
-    "vpcCreate": {
-      "Type": "AWS::CloudFormation::Stack",
-      "Properties": { "TemplateURL": "https://s3-us-west-1.amazonaws.com/simple-cfn-templates/highly-available-vpc.json" }
-    },
-    "autoScaling" : {
-      "Type" : "AWS::CloudFormation::Stack",
-      "DependsOn" : "vpcCreate",
-      "Properties" : {
-        "TemplateURL" : "https://s3-us-west-1.amazonaws.com/simple-cfn-templates/autoScalingGroup.json",
-        "Parameters" : {
-          "ec2ImageParameter" : { "Type" : "String", "Default": "ami-e83a4288" },
-          "VPCCIDR" : { "Fn::GetAtt" : [ "vpcCreate", "Outputs.VPC" ] },
-          "publicSubnet1" : { "Fn::GetAtt" : [ "vpcCreate", "Outputs.publicSubnet1" ] },
-          "publicSubnet2" : { "Fn::GetAtt" : [ "vpcCreate", "Outputs.publicSubnet2" ] },
-          "privateSubnet1" : { "Fn::GetAtt" : [ "vpcCreate", "Outputs.privateSubnet1" ] },
-          "privateSubnet2" : { "Fn::GetAtt" : [ "vpcCreate", "Outputs.privateSubnet2" ] }
-        }
-      }
-    }
-  }
+	"AWSTemplateFormatVersion": "2010-09-09",
+	"Description": "Master CloudFormation Template Authored by Daniel Wright - http://iamaman.com.au",
+	"Resources": {
+		"vpcCreate": {
+			"Type": "AWS::CloudFormation::Stack",
+			"Properties": {
+				"TemplateURL": "https://s3-us-west-1.amazonaws.com/simple-cfn-templates/highly-available-vpc.json"
+			}
+		},
+		"autoScaling": {
+			"Type": "AWS::CloudFormation::Stack",
+			"DependsOn": "vpcCreate",
+			"Properties": {
+				"TemplateURL": "https://s3-us-west-1.amazonaws.com/simple-cfn-templates/autoScalingGroup.json",
+				"Parameters": {
+					"ec2ImageParameter": "ami-e83a4288",
+					"vpcId": {
+						"Fn::GetAtt": ["vpcCreate", "Outputs.VPC"]
+					},
+					"publicSubnet1": {
+						"Fn::GetAtt": ["vpcCreate", "Outputs.publicSubnet1"]
+					},
+					"publicSubnet2": {
+						"Fn::GetAtt": ["vpcCreate", "Outputs.publicSubnet2"]
+					},
+					"privateSubnet1": {
+						"Fn::GetAtt": ["vpcCreate", "Outputs.privateSubnet1"]
+					},
+					"privateSubnet2": {
+						"Fn::GetAtt": ["vpcCreate", "Outputs.privateSubnet2"]
+					}
+				}
+			}
+		}
+	}
 }
