@@ -32,6 +32,30 @@
 					}
 				}
 			}
+		},
+		"bastionHosts": {
+			"Type": "AWS::CloudFormation::Stack",
+			"DependsOn": "vpcCreate",
+			"Properties": {
+				"TemplateURL": "https://s3-us-west-1.amazonaws.com/simple-cfn-templates/bastionHosts.json",
+				"Parameters": {
+					"vpcId": {
+						"Fn::GetAtt": ["vpcCreate", "Outputs.VPC"]
+					},
+					"publicSubnet1": {
+						"Fn::GetAtt": ["vpcCreate", "Outputs.publicSubnet1"]
+					},
+					"publicSubnet2": {
+						"Fn::GetAtt": ["vpcCreate", "Outputs.publicSubnet2"]
+					},
+					"privateSubnet1": {
+						"Fn::GetAtt": ["vpcCreate", "Outputs.privateSubnet1"]
+					},
+					"privateSubnet2": {
+						"Fn::GetAtt": ["vpcCreate", "Outputs.privateSubnet2"]
+					}
+				}
+			}
 		}
 	}
 }

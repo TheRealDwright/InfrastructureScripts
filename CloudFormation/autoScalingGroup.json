@@ -25,6 +25,11 @@
 		"privateSubnet2": {
 			"Description": "Availability Zone 2 Private Subnet",
 			"Type": "AWS::EC2::Subnet::Id"
+		},
+		"keyName": {
+			"Description": "Name of pem file to use when launching instances",
+			"Type": "String",
+			"Default": "NT"
 		}
 	},
 	"Resources": {
@@ -81,7 +86,9 @@
 		"launchConfiguration": {
 			"Type": "AWS::AutoScaling::LaunchConfiguration",
 			"Properties": {
-				"KeyName": "NT",
+				"KeyName": {
+					"Ref": "keyName"
+				},
 				"ImageId": {
 					"Ref": "ec2ImageParameter"
 				},
