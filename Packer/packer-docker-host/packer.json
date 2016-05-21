@@ -1,0 +1,45 @@
+{
+  "variables": {
+    "aws_key": "{{ env `AWS_ACCESS_KEY` }}",
+    "aws_secret": "{{ env `AWS_SECRET_KEY` }}",
+    "atlas_token": "{{ env `ATLAS_TOKEN` }}"
+  },
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "access_key": "{{ user `aws_key` }}",
+      "secret_key": "{{ user `aws_secret` }}",
+      "region": "us-west-2",
+      "source_ami": "ami-9abea4fb",
+      "ssh_username": "ubuntu",
+      "instance_type": "t2.micro",
+      "ami_name": "packer-docker-host {{timestamp}}",
+      "ami_regions": [
+        "ap-southeast-2",
+        "us-west-1"
+      ]
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "script": "provision/ansible.sh"
+    },
+    {
+      "type": "ansible-local",
+      "playbook_dir": "provision",
+      "playbook_file": "provision/app.yml"
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "atlas",
+      "token": "{{ user `atlas_token` }}",
+      "artifact": "SimpleHQ/docker-host",
+      "artifact_type": "amazon.image",
+      "metadata": {
+        "created_at": "{{timestamp}}"
+      }
+    }
+  ]
+}
