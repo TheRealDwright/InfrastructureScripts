@@ -1,0 +1,151 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Deploy a Bamboo Server inside a VPC. Authored by Daniel Wright",
+  "Parameters": {
+    "bambooInstanceType": {
+      "AllowedValues": [
+        "t2.micro",
+        "t2.medium",
+        "t2.large",
+        "m4.large"
+      ],
+      "ConstraintDescription": "must be a valid and allowed EC2 instance type.",
+      "Default": "t2.large",
+      "Description": "Bamboo instance type",
+      "Type": "String"
+    },
+    "keyName": {
+      "Default": "NT-Oregon",
+      "Description": "Name of pem file to use when launching instances",
+      "Type": "String"
+    },
+    "publicSubnet1": {
+      "Description": "Availability Zone 1 Public Subnet",
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+    "vpcId": {
+      "Description": "Select a VPC-ID to use",
+      "Type": "AWS::EC2::VPC::Id"
+    }
+  },
+  "Mappings": {
+    "awsInstanceTypeArch": {
+      "m4.large": {
+        "Arch": "64"
+      },
+      "t2.large": {
+        "Arch": "64"
+      },
+      "t2.medium": {
+        "Arch": "64"
+      },
+      "t2.micro": {
+        "Arch": "64"
+      }
+    },
+    "ubuntuLatestAmi": {
+      "ap-southeast-2": {
+        "64": "ami-XXXXXXXX"
+      },
+      "us-east-1": {
+        "64": "ami-XXXXXXXX"
+      },
+      "us-west-1": {
+        "64": "ami-XXXXXXXX"
+      },
+      "us-west-2": {
+        "64": "ami-XXXXXXXX"
+      }
+    }
+  },
+  "Resources": {
+    "bambooInstance": {
+      "Properties": {
+        "BlockDeviceMappings": [
+          {
+            "DeviceName": "/dev/sda1",
+            "Ebs": {
+              "VolumeSize": "50"
+            }
+          }
+        ],
+        "ImageId": {
+          "Fn::FindInMap": [
+            "ubuntuLatestAmi",
+            {
+              "Ref": "AWS::Region"
+            },
+            {
+              "Fn::FindInMap": [
+                "awsInstanceTypeArch",
+                {
+                  "Ref": "bambooInstanceType"
+                },
+                "Arch"
+              ]
+            }
+          ]
+        },
+        "InstanceType": {
+          "Ref": "bambooInstanceType"
+        },
+        "KeyName": {
+          "Ref": "keyName"
+        },
+        "NetworkInterfaces": [
+          {
+            "AssociatePublicIpAddress": "true",
+            "DeleteOnTermination": "true",
+            "DeviceIndex": "0",
+            "GroupSet": [
+              {
+                "Ref": "bambooSecurityGroup"
+              }
+            ],
+            "SubnetId": {
+              "Ref": "publicSubnet1"
+            }
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Bamboo Server"
+          }
+        ]
+      },
+      "Type": "AWS::EC2::Instance"
+    },
+    "bambooSecurityGroup": {
+      "Properties": {
+        "GroupDescription": "Security Group for Bamboo Server",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "FromPort": "0",
+            "IpProtocol": "tcp",
+            "ToPort": "65535"
+          }
+        ],
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "FromPort": "0",
+            "IpProtocol": "tcp",
+            "ToPort": "65535"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "bambooSecurityGroup"
+          }
+        ],
+        "VpcId": {
+          "Ref": "vpcId"
+        }
+      },
+      "Type": "AWS::EC2::SecurityGroup"
+    }
+  }
+}

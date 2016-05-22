@@ -1,0 +1,439 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Deploy a Jenkins Server inside a VPC. Authored by Daniel Wright",
+  "Parameters": {
+    "DockerImage": {
+      "Default": "simplehq/hermes",
+      "Description": "Path of the Jenkins Docker image (format: '[<registry>[:<port>]/]<repository>:<version>')",
+      "Type": "String"
+    },
+    "InstanceType": {
+      "AllowedValues": [
+        "t1.micro",
+        "t2.medium",
+        "t2.large"
+      ],
+      "ConstraintDescription": "must be a valid EC2 instance type.",
+      "Default": "t2.large",
+      "Description": "EC2 instance type",
+      "Type": "String"
+    },
+    "S3Bucket": {
+      "Default": "simplehq-jenkins",
+      "Description": "Existing S3 bucket to use for Jenkins backups and restores",
+      "Type": "String"
+    },
+    "S3Prefix": {
+      "Default": "jenkins",
+      "Description": "[Optional] Key prefix to use for Jenkins backups",
+      "Type": "String"
+    },
+    "jenkinsSecurityGroup": {
+      "Description": "Existing security group that should be granted administrative access to Jenkins (e.g., 'sg-123456')",
+      "Type": "AWS::EC2::SecurityGroup::Id"
+    },
+    "keyName": {
+      "Description": "Name of an existing EC2 keypair to enable SSH access to the instances",
+      "Type": "AWS::EC2::KeyPair::KeyName"
+    },
+    "publicSubnets": {
+      "Description": "List of VPC subnet IDs for the cluster",
+      "Type": "List<AWS::EC2::Subnet::Id>"
+    },
+    "vpcId": {
+      "Description": "VPC associated with the provided subnets",
+      "Type": "AWS::EC2::VPC::Id"
+    }
+  },
+  "Mappings": {
+    "RegionMap": {
+      "ap-southeast-2": {
+        "AMI": "ami-XXXXXXXX"
+      },
+      "us-west-1": {
+        "AMI": "ami-XXXXXXXX"
+      },
+      "us-west-2": {
+        "AMI": "ami-XXXXXXXX"
+      }
+    }
+  },
+  "Resources": {
+    "ElasticLoadBalancer": {
+      "Properties": {
+        "HealthCheck": {
+          "HealthyThreshold": "3",
+          "Interval": "10",
+          "Target": "HTTP:8080/login",
+          "Timeout": "5",
+          "UnhealthyThreshold": "5"
+        },
+        "Listeners": [
+          {
+            "InstancePort": "8080",
+            "LoadBalancerPort": "80",
+            "Protocol": "HTTP"
+          }
+        ],
+        "SecurityGroups": [
+          {
+            "Ref": "LbSecurityGroup"
+          },
+          {
+            "Ref": "jenkinsSecurityGroup"
+          }
+        ],
+        "Subnets": {
+          "Ref": "publicSubnets"
+        }
+      },
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
+    },
+    "HostKeys": {
+      "Properties": {
+        "UserName": {
+          "Ref": "IAMUser"
+        }
+      },
+      "Type": "AWS::IAM::AccessKey"
+    },
+    "IAMUser": {
+      "Properties": {
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "s3:*",
+                  "Effect": "Allow",
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        "arn:aws:s3:::",
+                        {
+                          "Ref": "S3Bucket"
+                        },
+                        "/*"
+                      ]
+                    ]
+                  }
+                }
+              ]
+            },
+            "PolicyName": "S3Access"
+          },
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "NotAction": "iam:*",
+                  "Resource": "*"
+                }
+              ]
+            },
+            "PolicyName": "IAMAccess"
+          }
+        ]
+      },
+      "Type": "AWS::IAM::User"
+    },
+    "LaunchConfig": {
+      "Metadata" : {
+        "AWS::CloudFormation::Init" : {
+          "config": {
+            "packages" : {
+              "python" : {
+                "awscli":[]
+              }
+            },
+            "files" : {
+              "/etc/aws.conf" : {
+                "content" : { "Fn::Join" : ["\n", [
+                  "[default]",
+                  "aws_access_key_id={{access_key}}",
+                  "aws_secret_access_key={{secret_key}}"
+                ]]},
+                "context" : {
+                  "access_key"  : { "Ref" : "HostKeys" },
+                  "secret_key"  : { "Fn::GetAtt" : ["HostKeys", "SecretAccessKey"]}
+                },
+                "mode"    : "000700",
+                "owner"   : "root",
+                "group"   : "root"
+              },
+
+              "/usr/local/bin/jenkins-restore" : {
+                "content" : { "Fn::Join" : ["\n", [
+                  "#!/bin/bash -e",
+                  "",
+                  "USAGE=\"Usage: $0 S3_TARGET JENKINS_HOME\\n",
+                  "\\n",
+                  "Example:\\n",
+                  "$0 s3://mybucket/jenkins/jenkins-201405011901.tar.gz /var/lib/jenkins\\n",
+                  "\\n",
+                  "If S3_TARGET is a directory, restore from the newest file. Make sure to include the trailing slash:\\n",
+                  "$0 s3://mybucket/jenkins/ /var/lib/jenkins\"",
+                  "",
+                  "S3_TARGET=$1",
+                  "JENKINS_HOME=$2",
+                  "if [[ -z \"`echo $S3_TARGET|grep '^s3://'`\" ]]; then",
+                  "    echo -e $USAGE",
+                  "    exit 1",
+                  "fi",
+                  "",
+                  "if [[ \"$S3_TARGET\" == */ ]]; then",
+                  "    S3_TARGET=$S3_TARGET`aws s3 ls $S3_TARGET|tail -1|awk '{print $NF}'`",
+                  "fi",
+                  "",
+                  "LOCAL_BACKUP=/tmp/`basename $S3_TARGET`",
+                  "aws s3 cp $S3_TARGET $LOCAL_BACKUP",
+                  "",
+                  "if [[ -d \"$JENKINS_HOME\" ]]; then",
+                  "    read -p \"Delete existing $JENKINS_HOME? (y/n) \" -n 1 -r",
+                  "    echo",
+                  "    if [[ $REPLY =~ ^[Yy]$ ]]; then",
+                  "        rm -rf $JENKINS_HOME",
+                  "    else",
+                  "        echo \"Bailing out\"",
+                  "        exit 1",
+                  "    fi",
+                  "fi",
+                  "",
+                  "mkdir -p $JENKINS_HOME",
+                  "tar zxf $LOCAL_BACKUP -C $JENKINS_HOME",
+                  "rm -f $LOCAL_BACKUP"
+                ]]},
+                "mode"    : "000755",
+                "owner"   : "root",
+                "group"   : "root"
+              },
+
+              "/usr/local/bin/jenkins-backup" : {
+                "content" : { "Fn::Join" : ["\n", [
+                  "#!/bin/bash -e",
+                  "",
+                  "USAGE=\"Usage: $0 JENKINS_HOME S3_TARGET\\n",
+                  "\\n",
+                  "Examples:\\n",
+                  "$0 /var/lib/jenkins s3://mybucket/jenkins/jenkins-201405011901.tar.gz\"",
+                  "",
+                  "JENKINS_HOME=$1",
+                  "S3_TARGET=$2",
+                  "if [[ -z \"`echo $S3_TARGET|grep '^s3://'`\" || ! -d \"$JENKINS_HOME\" ]]; then",
+                  "    echo -e $USAGE",
+                  "    exit 1",
+                  "fi",
+                  "",
+                  "LOCAL_BACKUP=/tmp/`basename $S3_TARGET`",
+                  "",
+                  "tar -C $JENKINS_HOME -zcf $LOCAL_BACKUP .\\",
+                  "    --exclude \"config-history/\" \\",
+                  "    --exclude \"config-history/*\" \\",
+                  "    --exclude \"jobs/*/workspace*\" \\",
+                  "    --exclude \"jobs/*/builds/*/archive\" \\",
+                  "    --exclude \"plugins/*/*\" \\",
+                  "    --exclude \"plugins/*.bak\" \\",
+                  "    --exclude \"war\" \\",
+                  "    --exclude \"cache\"",
+                  "",
+                  "aws s3 cp $LOCAL_BACKUP $S3_TARGET",
+                  "rm -f $LOCAL_BACKUP"
+                ]]},
+                "mode"    : "000755",
+                "owner"   : "root",
+                "group"   : "root"
+              },
+
+              "/etc/cron.d/jenkins" : {
+                "content" : { "Fn::Join" : ["\n", [
+                  "AWS_CONFIG_FILE=/etc/aws.conf",
+                  "PATH=/bin:/usr/bin::/usr/local/bin",
+                  "59 0 * * * root jenkins-backup /var/lib/jenkins s3://{{s3_bucket}}/{{s3_prefix}}jenkins-`date +\\%Y\\%m\\%d\\%H\\%M.tar.gz` >> /var/log/jenkins-backup.log 2>&1\n"
+                ]]},
+                "context" : {
+                  "s3_bucket"   : { "Ref" : "S3Bucket"},
+                  "s3_prefix"   : { "Ref" : "S3Prefix"}
+                },
+                "mode"    : "000700",
+                "owner"   : "root",
+                "group"   : "root"
+              },
+
+              "/etc/init.d/jenkins" : {
+                "content" : { "Fn::Join" : ["\n", [
+                  "description 'Start Some Container'",
+                  "author 'Some Lonely Guy'",
+                  "start on filesystem and started docker",
+                  "stop on runlevel [!2345]",
+                  "respawn",
+                  "script",
+                  "  /usr/bin/docker run -d -p 8080:8080 -v /var/lib/jenkins:/jenkins ", { "Ref": "DockerImage" }, "\n",
+                  "end script"
+                ]]},
+                "mode"    : "000700",
+                "owner"   : "root",
+                "group"   : "root"
+              }
+
+            }
+          }
+        }
+      },
+      "Properties": {
+        "AssociatePublicIpAddress": "true",
+        "ImageId": {
+          "Fn::FindInMap": [
+            "RegionMap",
+            {
+              "Ref": "AWS::Region"
+            },
+            "AMI"
+          ]
+        },
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "KeyName": {
+          "Ref": "keyName"
+        },
+        "SecurityGroups": [
+          {
+            "Ref": "ServerSecurityGroup"
+          },
+          {
+            "Ref": "jenkinsSecurityGroup"
+          }
+        ],
+        "UserData": { "Fn::Base64" : { "Fn::Join" : ["", [
+          "#!/bin/bash -ex\n",
+
+          "# Helper function\n",
+          "function error_exit\n",
+          "{\n",
+          "  cfn-signal -e 1 -r \"$1\" '", { "Ref" : "WaitHandle" }, "'\n",
+          "  exit 1\n",
+          "}\n",
+
+          "cfn-init -s ", { "Ref" : "AWS::StackName" }, " -r LaunchConfig ",
+          "    --access-key ",  { "Ref" : "HostKeys" },
+          "    --secret-key ", {"Fn::GetAtt": ["HostKeys", "SecretAccessKey"]},
+          "    --region ", { "Ref" : "AWS::Region" }, " || error_exit 'Failed to run cfn-init'\n",
+
+          "# Post-cfn work\n",
+
+          "# Handle case where cron doesn't detect the new /etc/cron.d file\n",
+          "service cron restart\n",
+
+          "# Attempt to restore from backup\n",
+          "export AWS_CONFIG_FILE=/etc/aws.conf\n",
+          "jenkins-restore s3://",{ "Ref": "S3Bucket" },"/",{ "Ref": "S3Prefix" }," /var/lib/jenkins || true # ignore errors\n",
+
+          "# Start Jenkins\n",
+          "docker pull ", { "Ref": "DockerImage" }, "\n",
+          "docker run",
+          "   -p 8080:8080",
+          "   -d",
+          "   -v /var/lib/jenkins:/jenkins",
+          "   ", { "Ref": "DockerImage" }, "|| error_exit 'Failed to launch Docker container'\n",
+
+          "# Dan is better than Cameron, signal success\n",
+          "cfn-signal -e 0 -r \"Stack setup complete\" '", { "Ref" : "WaitHandle" }, "\n",
+
+          "#EOF"
+              ]
+            ]
+          }
+        }
+      },
+      "Type": "AWS::AutoScaling::LaunchConfiguration"
+    },
+    "LbSecurityGroup": {
+      "Properties": {
+        "GroupDescription": "Jenkins LBs",
+        "VpcId": {
+          "Ref": "vpcId"
+        }
+      },
+      "Type": "AWS::EC2::SecurityGroup"
+    },
+    "ServerGroup": {
+      "Properties": {
+        "DesiredCapacity": "1",
+        "LaunchConfigurationName": {
+          "Ref": "LaunchConfig"
+        },
+        "LoadBalancerNames": [
+          {
+            "Ref": "ElasticLoadBalancer"
+          }
+        ],
+        "MaxSize": "1",
+        "MinSize": "1",
+        "Tags": [
+          {
+            "Key": "Name",
+            "PropagateAtLaunch": "true",
+            "Value": "Jenkins Server"
+          }
+        ],
+        "VPCZoneIdentifier": {
+          "Ref": "publicSubnets"
+        }
+      },
+      "Type": "AWS::AutoScaling::AutoScalingGroup"
+    },
+    "ServerSecurityGroup": {
+      "Properties": {
+        "GroupDescription": "Jenkins servers",
+        "SecurityGroupIngress": [
+          {
+            "FromPort": "8080",
+            "IpProtocol": "tcp",
+            "SourceSecurityGroupId": {
+              "Ref": "LbSecurityGroup"
+            },
+            "ToPort": "8080"
+          }
+        ],
+        "VpcId": {
+          "Ref": "vpcId"
+        }
+      },
+      "Type": "AWS::EC2::SecurityGroup"
+    },
+    "WaitHandle": {
+      "Type": "AWS::CloudFormation::WaitConditionHandle"
+    },
+    "jenkinsWaitCondition": {
+      "DependsOn": "ServerGroup",
+      "Properties": {
+        "Handle": {
+          "Ref": "WaitHandle"
+        },
+        "Timeout": "4500"
+      },
+      "Type": "AWS::CloudFormation::WaitCondition"
+    }
+  },
+  "Outputs": {
+    "DnsAddress": {
+      "Description": "Jenkins URL",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "http://",
+            {
+              "Fn::GetAtt": [
+                "ElasticLoadBalancer",
+                "DNSName"
+              ]
+            }
+          ]
+        ]
+      }
+    }
+  }
+}

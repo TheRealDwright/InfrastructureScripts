@@ -1,193 +1,234 @@
 {
-	"AWSTemplateFormatVersion": "2010-09-09",
-	"Description": "Deploy bastion hosts inside a VPC. Authored by Daniel Wright - http://iamaman.com.au",
-	"Mappings": {
-		"ubuntuLatestAmi": {
-			"us-west-1": {
-				"64": "ami-06116566"
-			},
-			"us-west-2": {
-				"64": "ami-9abea4fb"
-			},
-			"us-east-1": {
-				"64": "ami-fce3c696"
-			},
-			"ap-southeast-2": {
-				"64": "ami-6c14310f"
-			}
-		},
-		"awsInstanceTypeArch": {
-			"t2.micro": {
-				"Arch": "64"
-			},
-			"t2.medium": {
-				"Arch": "64"
-			},
-			"t2.large": {
-				"Arch": "64"
-			},
-			"m4.large": {
-				"Arch": "64"
-			}
-		}
-	},
-	"Parameters": {
-		"bastionInstanceType": {
-			"Description": "Bastion instance type",
-			"Type": "String",
-			"Default": "t2.micro",
-			"AllowedValues": ["t2.micro", "t2.medium", "t2.large", "m4.large"],
-			"ConstraintDescription": "must be a valid and allowed EC2 instance type."
-		},
-		"vpcId": {
-			"Description": "Select a VPC-ID to use",
-			"Type": "AWS::EC2::VPC::Id"
-		},
-		"publicSubnet1": {
-			"Description": "Availability Zone 1 Public Subnet",
-			"Type": "AWS::EC2::Subnet::Id"
-		},
-		"publicSubnet2": {
-			"Description": "Availability Zone 2 Public Subnet",
-			"Type": "AWS::EC2::Subnet::Id"
-		},
-		"privateSubnet1": {
-			"Description": "Availability Zone 1 Private Subnet",
-			"Type": "AWS::EC2::Subnet::Id"
-		},
-		"privateSubnet2": {
-			"Description": "Availability Zone 2 Private Subnet",
-			"Type": "AWS::EC2::Subnet::Id"
-		},
-		"keyName": {
-			"Description": "Name of pem file to use when launching instances",
-			"Type": "String",
-			"Default": "NT"
-		}
-	},
-	"Resources": {
-		"EIP1": {
-			"Type": "AWS::EC2::EIP",
-			"Properties": {
-				"Domain": {
-					"Ref": "vpcId"
-				},
-				"InstanceId": {
-					"Ref": "bastionHost1"
-				}
-			}
-		},
-		"EIP2": {
-			"Type": "AWS::EC2::EIP",
-			"Properties": {
-				"Domain": {
-					"Ref": "vpcId"
-				},
-				"InstanceId": {
-					"Ref": "bastionHost2"
-				}
-			}
-		},
-		"bastionSecurityGroup": {
-			"Type": "AWS::EC2::SecurityGroup",
-			"Properties": {
-				"Tags": [{
-					"Key": "Name",
-					"Value": "bastionSecurityGroup"
-				}],
-				"GroupDescription": "Security Group for Bastion Hosts",
-				"VpcId": {
-					"Ref": "vpcId"
-				},
-				"SecurityGroupIngress": [{
-					"IpProtocol": "tcp",
-					"FromPort": "22",
-					"ToPort": "22",
-					"CidrIp": "0.0.0.0/0"
-				}],
-				"SecurityGroupEgress": [{
-					"IpProtocol": "tcp",
-					"FromPort": "0",
-					"ToPort": "65535",
-					"CidrIp": "0.0.0.0/0"
-				}]
-			}
-		},
-		"bastionHost1": {
-			"Type": "AWS::EC2::Instance",
-			"Properties": {
-				"InstanceType": {
-					"Ref": "bastionInstanceType"
-				},
-				"KeyName": {
-					"Ref": "keyName"
-				},
-				"ImageId": {
-					"Fn::FindInMap": ["ubuntuLatestAmi", {
-						"Ref": "AWS::Region"
-					}, {
-						"Fn::FindInMap": ["awsInstanceTypeArch", {
-							"Ref": "bastionInstanceType"
-						}, "Arch"]
-					}]
-				},
-				"NetworkInterfaces": [{
-					"GroupSet": [{
-						"Ref": "bastionSecurityGroup"
-					}],
-					"AssociatePublicIpAddress": "false",
-					"DeviceIndex": "0",
-					"DeleteOnTermination": "true",
-					"SubnetId": {
-						"Ref": "publicSubnet1"
-					}
-				}],
-				"Tags": [{
-					"Key": "Name",
-					"Value": "Bastion Host 1"
-				}, {
-					"Key": "Bastion",
-					"Value": "true"
-				}]
-			}
-		},
-		"bastionHost2": {
-			"Type": "AWS::EC2::Instance",
-			"Properties": {
-				"InstanceType": {
-					"Ref": "bastionInstanceType"
-				},
-				"KeyName": {
-					"Ref": "keyName"
-				},
-				"ImageId": {
-					"Fn::FindInMap": ["ubuntuLatestAmi", {
-						"Ref": "AWS::Region"
-					}, {
-						"Fn::FindInMap": ["awsInstanceTypeArch", {
-							"Ref": "bastionInstanceType"
-						}, "Arch"]
-					}]
-				},
-				"NetworkInterfaces": [{
-					"GroupSet": [{
-						"Ref": "bastionSecurityGroup"
-					}],
-					"AssociatePublicIpAddress": "false",
-					"DeviceIndex": "0",
-					"DeleteOnTermination": "true",
-					"SubnetId": {
-						"Ref": "publicSubnet2"
-					}
-				}],
-				"Tags": [{
-					"Key": "Name",
-					"Value": "Bastion Host 2"
-				}, {
-					"Key": "Bastion",
-					"Value": "true"
-				}]
-			}
-		}
-	}
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Deploy bastion hosts inside a VPC. Authored by Daniel Wright",
+  "Parameters": {
+    "bastionInstanceType": {
+      "AllowedValues": [
+        "t2.micro",
+        "t2.medium",
+        "t2.large",
+        "m4.large"
+      ],
+      "ConstraintDescription": "must be a valid and allowed EC2 instance type.",
+      "Default": "t2.micro",
+      "Description": "Bastion instance type",
+      "Type": "String"
+    },
+    "keyName": {
+      "Default": "NT-Oregon",
+      "Description": "Name of pem file to use when launching instances",
+      "Type": "String"
+    },
+    "privateSubnet1": {
+      "Description": "Availability Zone 1 Private Subnet",
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+    "privateSubnet2": {
+      "Description": "Availability Zone 2 Private Subnet",
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+    "publicSubnet1": {
+      "Description": "Availability Zone 1 Public Subnet",
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+    "publicSubnet2": {
+      "Description": "Availability Zone 2 Public Subnet",
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+    "vpcId": {
+      "Description": "Select a VPC-ID to use",
+      "Type": "AWS::EC2::VPC::Id"
+    }
+  },
+  "Mappings": {
+    "awsInstanceTypeArch": {
+      "m4.large": {
+        "Arch": "64"
+      },
+      "t2.large": {
+        "Arch": "64"
+      },
+      "t2.medium": {
+        "Arch": "64"
+      },
+      "t2.micro": {
+        "Arch": "64"
+      }
+    },
+    "ubuntuLatestAmi": {
+      "ap-southeast-2": {
+        "64": "ami-6c14310f"
+      },
+      "us-east-1": {
+        "64": "ami-fce3c696"
+      },
+      "us-west-1": {
+        "64": "ami-06116566"
+      },
+      "us-west-2": {
+        "64": "ami-9abea4fb"
+      }
+    }
+  },
+  "Resources": {
+    "EIP1": {
+      "Properties": {
+        "Domain": {
+          "Ref": "vpcId"
+        },
+        "InstanceId": {
+          "Ref": "bastionHost1"
+        }
+      },
+      "Type": "AWS::EC2::EIP"
+    },
+    "EIP2": {
+      "Properties": {
+        "Domain": {
+          "Ref": "vpcId"
+        },
+        "InstanceId": {
+          "Ref": "bastionHost2"
+        }
+      },
+      "Type": "AWS::EC2::EIP"
+    },
+    "bastionHost1": {
+      "Properties": {
+        "ImageId": {
+          "Fn::FindInMap": [
+            "ubuntuLatestAmi",
+            {
+              "Ref": "AWS::Region"
+            },
+            {
+              "Fn::FindInMap": [
+                "awsInstanceTypeArch",
+                {
+                  "Ref": "bastionInstanceType"
+                },
+                "Arch"
+              ]
+            }
+          ]
+        },
+        "InstanceType": {
+          "Ref": "bastionInstanceType"
+        },
+        "KeyName": {
+          "Ref": "keyName"
+        },
+        "NetworkInterfaces": [
+          {
+            "AssociatePublicIpAddress": "false",
+            "DeleteOnTermination": "true",
+            "DeviceIndex": "0",
+            "GroupSet": [
+              {
+                "Ref": "bastionSecurityGroup"
+              }
+            ],
+            "SubnetId": {
+              "Ref": "publicSubnet1"
+            }
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Bastion Host 1"
+          },
+          {
+            "Key": "Bastion",
+            "Value": "true"
+          }
+        ]
+      },
+      "Type": "AWS::EC2::Instance"
+    },
+    "bastionHost2": {
+      "Properties": {
+        "ImageId": {
+          "Fn::FindInMap": [
+            "ubuntuLatestAmi",
+            {
+              "Ref": "AWS::Region"
+            },
+            {
+              "Fn::FindInMap": [
+                "awsInstanceTypeArch",
+                {
+                  "Ref": "bastionInstanceType"
+                },
+                "Arch"
+              ]
+            }
+          ]
+        },
+        "InstanceType": {
+          "Ref": "bastionInstanceType"
+        },
+        "KeyName": {
+          "Ref": "keyName"
+        },
+        "NetworkInterfaces": [
+          {
+            "AssociatePublicIpAddress": "false",
+            "DeleteOnTermination": "true",
+            "DeviceIndex": "0",
+            "GroupSet": [
+              {
+                "Ref": "bastionSecurityGroup"
+              }
+            ],
+            "SubnetId": {
+              "Ref": "publicSubnet2"
+            }
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Bastion Host 2"
+          },
+          {
+            "Key": "Bastion",
+            "Value": "true"
+          }
+        ]
+      },
+      "Type": "AWS::EC2::Instance"
+    },
+    "bastionSecurityGroup": {
+      "Properties": {
+        "GroupDescription": "Security Group for Bastion Hosts",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "FromPort": "0",
+            "IpProtocol": "tcp",
+            "ToPort": "65535"
+          }
+        ],
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "FromPort": "22",
+            "IpProtocol": "tcp",
+            "ToPort": "22"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "bastionSecurityGroup"
+          }
+        ],
+        "VpcId": {
+          "Ref": "vpcId"
+        }
+      },
+      "Type": "AWS::EC2::SecurityGroup"
+    }
+  }
 }

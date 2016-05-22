@@ -1,0 +1,137 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Deploy the Simple Demo App Database inside a VPC. Authored by Daniel Wright",
+  "Parameters": {
+    "dBInstanceClass": {
+      "AllowedValues": [
+        "db.t2.micro",
+        "db.t2.medium",
+        "db.t2.large"
+      ],
+      "ConstraintDescription": "must be a valid EC2 instance type.",
+      "Default": "db.t2.micro",
+      "Description": "RDS instance type",
+      "Type": "String"
+    },
+    "authdBPassword": {
+      "Default": "CHANGE_ME_RIGHT_NOW!",
+      "Description": "Enter a DB Master Password",
+      "Type": "String"
+    },
+    "authdBUser": {
+      "Default": "root",
+      "Description": "Enter a DB Master User",
+      "Type": "String"
+    },
+    "authDb": {
+      "Description": "Default RDS Database for Auth Service",
+      "Type": "String",
+      "Default": "authdb"
+    },
+    "rdsSubnetGroup": {
+      "Default": "Default",
+      "Description": "Subnet Group for RDS Servers",
+      "Type": "String"
+    },
+    "vpcCidr": {
+      "Default": "10.100.0.0/16",
+      "Description": "CIDR Block of VPC",
+      "Type": "String"
+    },
+    "vpcId": {
+      "Description": "VPC associated with the provided subnets",
+      "Type": "AWS::EC2::VPC::Id"
+    }
+  },
+  "Resources": {
+    "mysqlDb": {
+      "DeletionPolicy": "Snapshot",
+      "DependsOn": "mysqlRdsSecurityGroup",
+      "Properties": {
+        "AllocatedStorage": "100",
+        "DBInstanceClass": {
+          "Ref": "dBInstanceClass"
+        },
+        "DBSubnetGroupName": {
+          "Ref": "rdsSubnetGroup"
+        },
+        "Engine": "MySQL",
+        "EngineVersion": "5.5",
+        "MasterUserPassword": {
+          "Ref": "authdBPassword"
+        },
+        "DBName": {"Ref": "authDb"},
+        "MasterUsername": {
+          "Ref": "authdBUser"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Demo App MySQL Database"
+          }
+        ],
+        "VPCSecurityGroups": [
+          {
+            "Ref": "mysqlRdsSecurityGroup"
+          }
+        ]
+      },
+      "Type": "AWS::RDS::DBInstance"
+    },
+    "mysqlRdsSecurityGroup": {
+      "Properties": {
+        "GroupDescription": "Allow Inbound MySql Traffic",
+        "SecurityGroupEgress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "FromPort": "0",
+            "IpProtocol": "tcp",
+            "ToPort": "65535"
+          }
+        ],
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": {
+              "Ref": "vpcCidr"
+            },
+            "FromPort": "3306",
+            "IpProtocol": "tcp",
+            "ToPort": "3306"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "MySQL-RDS-Security-Group"
+          }
+        ],
+        "VpcId": {
+          "Ref": "vpcId"
+        }
+      },
+      "Type": "AWS::EC2::SecurityGroup"
+    }
+  },
+  "Outputs": {
+    "mysqlDb": {
+      "Description": "MySQL RDS Instance",
+      "Value": {
+        "Ref": "mysqlDb"
+      }
+    },
+    "mysqlRdsSecurityGroup": {
+      "Description": "Security Group of RDS Instances Running MySQL",
+      "Value": {
+        "Ref": "mysqlRdsSecurityGroup"
+      }
+    },
+    "mysqlDbEndpoint" : {
+      "Description" : "Address of database endpoint",
+      "Value" : { "Fn::GetAtt": [ "mysqlDb", "Endpoint.Address" ] }
+    },
+    "mysqlDbPort" : {
+      "Description" : "Database endpoint port number",
+      "Value" : { "Fn::GetAtt": [ "mysqlDb", "Endpoint.Port" ] }
+    }
+  }
+}

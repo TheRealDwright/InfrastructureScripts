@@ -1,61 +1,138 @@
 {
-	"AWSTemplateFormatVersion": "2010-09-09",
-	"Description": "Master CloudFormation Template Authored by Daniel Wright - http://iamaman.com.au",
-	"Resources": {
-		"vpcCreate": {
-			"Type": "AWS::CloudFormation::Stack",
-			"Properties": {
-				"TemplateURL": "https://s3-us-west-1.amazonaws.com/simple-cfn-templates/highly-available-vpc.json"
-			}
-		},
-		"autoScaling": {
-			"Type": "AWS::CloudFormation::Stack",
-			"DependsOn": "vpcCreate",
-			"Properties": {
-				"TemplateURL": "https://s3-us-west-1.amazonaws.com/simple-cfn-templates/autoScalingGroup.json",
-				"Parameters": {
-					"ec2ImageParameter": "ami-e83a4288",
-					"vpcId": {
-						"Fn::GetAtt": ["vpcCreate", "Outputs.VPC"]
-					},
-					"publicSubnet1": {
-						"Fn::GetAtt": ["vpcCreate", "Outputs.publicSubnet1"]
-					},
-					"publicSubnet2": {
-						"Fn::GetAtt": ["vpcCreate", "Outputs.publicSubnet2"]
-					},
-					"privateSubnet1": {
-						"Fn::GetAtt": ["vpcCreate", "Outputs.privateSubnet1"]
-					},
-					"privateSubnet2": {
-						"Fn::GetAtt": ["vpcCreate", "Outputs.privateSubnet2"]
-					}
-				}
-			}
-		},
-		"bastionHosts": {
-			"Type": "AWS::CloudFormation::Stack",
-			"DependsOn": "vpcCreate",
-			"Properties": {
-				"TemplateURL": "https://s3-us-west-1.amazonaws.com/simple-cfn-templates/bastionHosts.json",
-				"Parameters": {
-					"vpcId": {
-						"Fn::GetAtt": ["vpcCreate", "Outputs.VPC"]
-					},
-					"publicSubnet1": {
-						"Fn::GetAtt": ["vpcCreate", "Outputs.publicSubnet1"]
-					},
-					"publicSubnet2": {
-						"Fn::GetAtt": ["vpcCreate", "Outputs.publicSubnet2"]
-					},
-					"privateSubnet1": {
-						"Fn::GetAtt": ["vpcCreate", "Outputs.privateSubnet1"]
-					},
-					"privateSubnet2": {
-						"Fn::GetAtt": ["vpcCreate", "Outputs.privateSubnet2"]
-					}
-				}
-			}
-		}
-	}
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Master CloudFormation Template Authored by Daniel Wright",
+  "Parameters": {
+    "VPCCIDR": {
+      "Default": "10.50.0.0/16",
+      "Description": "Enter the VPC CIDR Block",
+      "Type": "String"
+    },
+    "authdBPassword": {
+      "Default": "CHANGE_ME_RIGHT_NOW!",
+      "Description": "Enter a DB Master Password",
+      "Type": "String"
+    },
+    "authdBUser": {
+      "Default": "root",
+      "Description": "Enter a DB Master User",
+      "Type": "String"
+    },
+    "authDb": {
+      "Default": "authdb",
+      "Description": "Enter the auth service database",
+      "Type": "String"
+    },
+    "dbsubnet1cidr": {
+      "Default": "10.50.200.0/24",
+      "Description": "Enter the DB Subnet 1 CIDR Block",
+      "Type": "String"
+    },
+    "dbsubnet2cidr": {
+      "Default": "10.50.210.0/24",
+      "Description": "Enter the DB Subnet 2 CIDR Block",
+      "Type": "String"
+    },
+    "privatesubnet1cidr": {
+      "Default": "10.50.12.0/22",
+      "Description": "Enter the Private Subnet 1 CIDR Block",
+      "Type": "String"
+    },
+    "privatesubnet2cidr": {
+      "Default": "10.50.20.0/22",
+      "Description": "Enter the Private Subnet 2 CIDR Block",
+      "Type": "String"
+    },
+    "publicsubnet1cidr": {
+      "Default": "10.50.0.0/24",
+      "Description": "Enter the Public Subnet 1 CIDR Block",
+      "Type": "String"
+    },
+    "publicsubnet2cidr": {
+      "Default": "10.50.4.0/24",
+      "Description": "Enter the Public Subnet 2 CIDR Block",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "vpcCreate": {
+      "Properties": {
+        "Parameters": {
+          "VPCCIDR": { "Ref": "VPCCIDR" },
+          "dbsubnet1cidr": { "Ref": "dbsubnet1cidr" },
+          "dbsubnet2cidr": { "Ref": "dbsubnet2cidr" },
+          "privatesubnet1cidr": { "Ref": "privatesubnet1cidr" },
+          "privatesubnet2cidr": { "Ref": "privatesubnet2cidr" },
+          "publicsubnet1cidr": { "Ref": "publicsubnet1cidr" },
+          "publicsubnet2cidr": {"Ref": "publicsubnet2cidr" }
+        },
+        "TemplateURL": "https://s3-us-west-1.amazonaws.com/simple-cfn-templates/highly-available-vpc.json"
+      },
+      "Type": "AWS::CloudFormation::Stack"
+    },
+    "bastionHosts": {
+      "DependsOn": "vpcCreate",
+      "Properties": {
+        "Parameters": {
+          "privateSubnet1": { "Fn::GetAtt": [ "vpcCreate", "Outputs.privateSubnet1" ]},
+          "privateSubnet2": { "Fn::GetAtt": [ "vpcCreate", "Outputs.privateSubnet2" ] },
+          "publicSubnet1": { "Fn::GetAtt": [ "vpcCreate", "Outputs.publicSubnet1" ] },
+          "publicSubnet2": { "Fn::GetAtt": [ "vpcCreate", "Outputs.publicSubnet2" ] },
+          "vpcId": { "Fn::GetAtt": [ "vpcCreate", "Outputs.VPC" ] }
+        },
+        "TemplateURL": "https://s3-us-west-1.amazonaws.com/simple-cfn-templates/bastionHosts.json"
+      },
+      "Type": "AWS::CloudFormation::Stack"
+    },
+    "demoApp": {
+      "DependsOn": "demoAppRds",
+      "Properties": {
+        "Parameters": {
+          "privateSubnet1": { "Fn::GetAtt": [ "vpcCreate", "Outputs.privateSubnet1" ] },
+          "privateSubnet2": { "Fn::GetAtt": [ "vpcCreate", "Outputs.privateSubnet2" ] },
+          "publicSubnet1": { "Fn::GetAtt": [ "vpcCreate", "Outputs.publicSubnet1" ] },
+          "publicSubnet2": { "Fn::GetAtt": [ "vpcCreate", "Outputs.publicSubnet2" ] },
+          "vpcId": { "Fn::GetAtt": [ "vpcCreate", "Outputs.VPC" ] },
+          "authdBPassword": { "Ref": "authdBPassword" },
+          "authdBUser": { "Ref": "authdBUser" },
+          "authDb": { "Ref": "authDb" },
+          "rdsEndpoint": { "Fn::GetAtt": [ "demoAppRds", "Outputs.mysqlDbEndpoint" ] },
+          "rdsPort": { "Fn::GetAtt": [ "demoAppRds", "Outputs.mysqlDbPort" ] },
+          "vpcCidr": { "Ref": "VPCCIDR" }
+        },
+        "TemplateURL": "https://s3-us-west-1.amazonaws.com/simple-cfn-templates/demoApp.json"
+      },
+      "Type": "AWS::CloudFormation::Stack"
+    },
+    "demoAppRds": {
+      "DependsOn": "vpcCreate",
+      "Properties": {
+        "Parameters": {
+          "authdBPassword": { "Ref": "authdBPassword" },
+          "authdBUser": { "Ref": "authdBUser" },
+          "authDb": { "Ref": "authDb" },
+          "rdsSubnetGroup": { "Fn::GetAtt": [ "vpcCreate", "Outputs.RDSSubnetGroup" ] },
+          "vpcCidr": { "Ref": "VPCCIDR" },
+          "vpcId": { "Fn::GetAtt": [ "vpcCreate", "Outputs.VPC" ] }
+        },
+        "TemplateURL": "https://s3-us-west-1.amazonaws.com/simple-cfn-templates/demoAppRds.json"
+      },
+      "Type": "AWS::CloudFormation::Stack"
+    },
+    "jenkinsServer": {
+      "DependsOn": "vpcCreate",
+      "Properties": {
+        "Parameters": {
+          "jenkinsSecurityGroup": { "Fn::GetAtt": [ "vpcCreate", "Outputs.jenkinsSecurityGroup" ] },
+          "keyName": "NT-Oregon",
+          "publicSubnets": { "Fn::Join": [ ",", [
+            { "Fn::GetAtt": [ "vpcCreate", "Outputs.publicSubnet1" ] },
+            { "Fn::GetAtt": [ "vpcCreate", "Outputs.publicSubnet2" ] }
+            ] ] },
+          "vpcId": { "Fn::GetAtt": [ "vpcCreate", "Outputs.VPC" ] }
+        },
+        "TemplateURL": "https://s3-us-west-1.amazonaws.com/simple-cfn-templates/jenkins.json"
+      },
+      "Type": "AWS::CloudFormation::Stack"
+    }
+  }
 }
