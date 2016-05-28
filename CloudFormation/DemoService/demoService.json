@@ -1,0 +1,390 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Deploy the Simple Auth App inside a VPC. Authored by Daniel Wright",
+  "Parameters": {
+    "vpcStackName": {
+      "Description": "Name of Active CFN Template Containing Infrastructure Resources",
+      "Type": "String",
+      "MinLength" : 1,
+      "MaxLength" : 255,
+      "AllowedPattern" : "^[a-zA-Z][-a-zA-Z0-9]*$",
+      "Default" : "INFRA-STACK"
+    },
+    "authAppEc2ImageParameter": {
+      "Default": "ami-XXXXXXXX",
+      "Type": "String"
+    },
+    "authAppDockerContainer": {
+      "Default": "quay.io/simplehq/simple-auth-service:develop",
+      "Type": "String"
+    },
+    "vpcCidr": {
+      "Default": "10.12.0.0/16",
+      "Description": "CIDR Block of VPC",
+      "Type": "String"
+    },
+    "keyName": {
+      "Default": "NT-Oregon",
+      "Description": "Name of pem file to use when launching instances",
+      "Type": "String"
+    },
+    "authdBPassword": {
+      "Default": "CHANGE_ME_RIGHT_NOW!",
+      "Description": "Enter a DB Master Password",
+      "Type": "String"
+    },
+    "authdBUser": {
+      "Default": "root",
+      "Description": "Enter a DB Master User",
+      "Type": "String"
+    },
+    "authDb": {
+      "Description": "Default RDS Database for Auth Service",
+      "Type": "String",
+      "Default": "authdb"
+    },
+    "rdsEndpoint": {
+      "Description": "RDS Endpoint of Auth DB",
+      "Type": "String",
+      "Default": "ENTER YOUR RDS ENDPOINT"
+    },
+    "rdsPort": {
+      "Description": "RDS Port of Auth DB",
+      "Type": "String",
+      "Default": "3306"
+    }
+  },
+  "Mappings": {
+    "RegionMap": {
+      "ap-southeast-2": {
+        "AMI": "ami-XXXXXXXX"
+      },
+      "us-west-1": {
+        "AMI": "ami-XXXXXXXX"
+      },
+      "us-west-2": {
+        "AMI": "ami-XXXXXXXX"
+      }
+    }
+  },
+  "Resources": {
+    "InfrastructureInfo": {
+      "Type": "Custom::InfrastructureInfo",
+      "Properties": {
+        "ServiceToken": { "Fn::GetAtt" : ["LookupStackOutputs", "Arn"] },
+        "StackName": {
+          "Ref": "vpcStackName"
+        }
+      }
+    },
+    "LookupStackOutputs": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Handler": "index.handler",
+        "Role": { "Fn::GetAtt" : ["LambdaExecutionRole", "Arn"] },
+        "Code": {
+          "ZipFile":  { "Fn::Join": ["\n", [
+            "var response = require('cfn-response');",
+            "exports.handler = function(event, context) {",
+            "    console.log('REQUEST RECEIVED:\\n', JSON.stringify(event));",
+            "    if (event.RequestType == 'Delete') {",
+            "        response.send(event, context, response.SUCCESS);",
+            "        return;",
+            "    }",
+            "    var stackName = event.ResourceProperties.StackName;",
+            "    var responseData = {};",
+            "    if (stackName) {",
+            "        var aws = require('aws-sdk');",
+            "        var cfn = new aws.CloudFormation();",
+            "        cfn.describeStacks({StackName: stackName}, function(err, data) {",
+            "            if (err) {",
+            "                responseData = {Error: 'DescribeStacks call failed'};",
+            "                console.log(responseData.Error + ':\\n', err);",
+            "                response.send(event, context, response.FAILED, responseData);",
+            "            }",
+            "            else {",
+            "                data.Stacks[0].Outputs.forEach(function(output) {",
+            "                    responseData[output.OutputKey] = output.OutputValue;",
+            "                });",
+            "                response.send(event, context, response.SUCCESS, responseData);",
+            "            }",
+            "        });",
+            "    } else {",
+            "        responseData = {Error: 'Stack name not specified'};",
+            "        console.log(responseData.Error);",
+            "        response.send(event, context, response.FAILED, responseData);",
+            "    }",
+            "};"
+          ]]}
+        },
+        "Runtime": "nodejs",
+        "Timeout": "30"
+      }
+    },
+    "LambdaExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{
+              "Effect": "Allow",
+              "Principal": {"Service": ["lambda.amazonaws.com"]},
+              "Action": ["sts:AssumeRole"]
+          }]
+        },
+        "Path": "/",
+        "Policies": [{
+          "PolicyName": "root",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [{
+                "Effect": "Allow",
+                "Action": ["logs:CreateLogGroup","logs:CreateLogStream","logs:PutLogEvents"],
+                "Resource": "arn:aws:logs:*:*:*"
+            },
+            {
+                "Effect": "Allow",
+                "Action": ["cloudformation:DescribeStacks"],
+                "Resource": "*"
+            }]
+          }
+        }]
+      }
+    },
+    "autoScalingGroup": {
+      "Properties": {
+        "LaunchConfigurationName": {
+          "Ref": "launchConfiguration"
+        },
+        "LoadBalancerNames": [
+          {
+            "Ref": "elasticLoadBalancer"
+          }
+        ],
+        "MaxSize": "4",
+        "MetricsCollection": [
+          {
+            "Granularity": "1Minute",
+            "Metrics": [
+              "GroupMinSize",
+              "GroupMaxSize"
+            ]
+          }
+        ],
+        "MinSize": "2",
+        "VPCZoneIdentifier": [
+          {
+            "Fn::GetAtt": [ "InfrastructureInfo", "privateSubnet1" ]
+          },
+          {
+            "Fn::GetAtt": [ "InfrastructureInfo", "privateSubnet2" ]
+          }
+        ]
+      },
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "UpdatePolicy": {
+        "AutoScalingRollingUpdate": {
+          "MaxBatchSize": "1",
+          "MinInstancesInService": "1",
+          "PauseTime": "PT2M30S"
+        }
+      }
+    },
+    "authAppSecurityGroup": {
+      "Properties": {
+        "GroupDescription": "Allow All Traffic From Simple Office",
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": { "Ref": "vpcCidr" } ,
+            "FromPort": "0",
+            "IpProtocol": "tcp",
+            "ToPort": "65535"
+          },
+          {
+            "CidrIp": "180.214.93.64/32",
+            "FromPort": "0",
+            "IpProtocol": "tcp",
+            "ToPort": "65535"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Auth-App-Security-Group"
+          }
+        ],
+        "VpcId": {
+          "Fn::GetAtt": [ "InfrastructureInfo", "VPC" ]
+        }
+      },
+      "Type": "AWS::EC2::SecurityGroup"
+    },
+    "elasticLoadBalancer": {
+      "Properties": {
+        "HealthCheck": {
+          "HealthyThreshold": "3",
+          "Interval": "5",
+          "Target": "HTTP:80/healthcheck",
+          "Timeout": "3",
+          "UnhealthyThreshold": "5"
+        },
+        "Listeners": [
+          {
+            "InstancePort": "80",
+            "LoadBalancerPort": "80",
+            "Protocol": "HTTP"
+          }
+        ],
+        "SecurityGroups": [
+          {
+            "Ref": "authAppSecurityGroup"
+          }
+        ],
+        "Subnets": [
+          {
+            "Fn::GetAtt": [ "InfrastructureInfo", "publicSubnet1" ]
+          },
+          {
+            "Fn::GetAtt": [ "InfrastructureInfo", "publicSubnet2" ]
+          }
+        ]
+      },
+      "Type": "AWS::ElasticLoadBalancing::LoadBalancer"
+    },
+    "launchConfiguration": {
+      "Metadata" : {
+        "AWS::CloudFormation::Init" : {
+          "config": {
+            "packages" : {
+              "python" : {
+                "awscli":[]
+              }
+            },
+            "files" : {
+              "/root/more-docker-envs" : {
+                "content": { "Fn::Join": [ "\n", [
+                      "DB_USER={{db_user}}",
+                      "DB_PASSWORD={{db_password}}",
+                      "AUTH_DB={{auth_db}}",
+                      "AUTH_DB_URI={{auth_db_uri}}"
+                    ]]},
+                "context" : {
+                  "db_user": { "Ref" : "authdBUser" },
+                  "db_password": { "Ref": "authdBPassword" },
+                  "auth_db": { "Ref": "authDb" },
+                  "auth_db_uri": { "Fn::Join": [ ":", [
+                    { "Ref": "authDb" },
+                    "3306"
+                    ] ] }
+                },
+                "mode"    : "000700",
+                "owner"   : "root",
+                "group"   : "root"
+              }
+            }
+          }
+        }
+      },
+      "Properties": {
+        "ImageId": {
+          "Ref": "authAppEc2ImageParameter"
+        },
+        "InstanceType": "t2.micro",
+        "KeyName": {
+          "Ref": "keyName"
+        },
+        "SecurityGroups": [
+          {
+            "Ref": "authAppSecurityGroup"
+          }
+        ],
+        "UserData": { "Fn::Base64" : { "Fn::Join" : ["", [
+          "#!/bin/bash\n",
+
+          "# Helper function\n",
+          "function error_exit\n",
+          "{\n",
+          "  cfn-signal -e 1 -r \"$1\" '", { "Ref" : "WaitHandle" }, "'\n",
+          "  exit 1\n",
+          "}\n",
+
+          "cfn-init -s ", { "Ref" : "AWS::StackName" }, " -r launchConfiguration ",
+          "    --region ", { "Ref" : "AWS::Region" }, " || error_exit 'Failed to run cfn-init'\n",
+
+          "# Post-cfn work\n",
+
+
+          "sudo echo DB_USER=", { "Ref": "authdBUser" }, " >> /root/docker.env", "\n",
+          "sudo echo DB_PASSWORD=", { "Ref": "authdBPassword" }, " >> /root/docker.env", "\n",
+          "sudo echo AUTH_DB_NAME=", { "Ref": "authDb" }, " >> /root/docker.env", "\n",
+          "sudo echo AUTH_DB_URI=", { "Ref": "rdsEndpoint" }, ":3306", " >> /root/docker.env", "\n",
+          "sudo echo AUTH_DB=", { "Ref": "authdBUser" }, ":", { "Ref": "authdBPassword" }, "@tcp\\(", { "Ref": "rdsEndpoint" }, ":3306\\)/", { "Ref": "authDb" }, "?parseTime=true", " >> /root/docker.env", "\n",
+
+          "#Pull The Docker Container Running the Service", "\n",
+          "sudo docker pull ", { "Ref": "authAppDockerContainer" }, "\n",
+
+          "#RUN The Docker Container", "\n",
+          "sudo docker run",
+          "   -d",
+          "   -p 80:4141",
+          "   --env-file /root/docker.env",
+          "   --restart always",
+          "   ", { "Ref": "authAppDockerContainer" }, "|| error_exit 'Failed to launch Docker container'\n",
+
+          "# Dan is better than Cameron, signal success\n",
+          "cfn-signal -e 0 -r \"Stack setup complete\" '", { "Ref" : "WaitHandle" }, "'\n",
+
+          "#EOF"
+              ]
+            ]
+          }
+        }
+      },
+    "Type": "AWS::AutoScaling::LaunchConfiguration"
+    },
+    "WaitHandle": {
+      "Type": "AWS::CloudFormation::WaitConditionHandle"
+    },
+    "authServiceWaitCondition": {
+      "DependsOn": "autoScalingGroup",
+      "Properties": {
+        "Handle": {
+          "Ref": "WaitHandle"
+        },
+        "Timeout": "4500"
+      },
+      "Type": "AWS::CloudFormation::WaitCondition"
+    }
+  },
+  "Outputs": {
+    "DnsAddress": {
+      "Description": "authApp ELB URL",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "http://",
+            {
+              "Fn::GetAtt": [
+                "elasticLoadBalancer",
+                "DNSName"
+              ]
+            }
+          ]
+        ]
+      }
+    },
+    "authAppSecurityGroup": {
+      "Description": "Security Group of Auth App",
+      "Value": {
+        "Ref": "authAppSecurityGroup"
+      }
+    },
+    "elasticLoadBalancer": {
+      "Description": "Elastic Load Balancer",
+      "Value": {
+        "Ref": "elasticLoadBalancer"
+      }
+    }
+  }
+}

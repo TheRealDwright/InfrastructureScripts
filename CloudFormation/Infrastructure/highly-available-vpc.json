@@ -3,37 +3,37 @@
   "Description": "Deploy a Highly Available VPC. Authored by Daniel Wright",
   "Parameters": {
     "VPCCIDR": {
-      "Default": "10.100.0.0/16",
+      "Default": "10.10.0.0/16",
       "Description": "Enter the VPC CIDR Block",
       "Type": "String"
     },
     "dbsubnet1cidr": {
-      "Default": "10.100.200.0/24",
+      "Default": "10.10.200.0/24",
       "Description": "Enter the DB Subnet 1 CIDR Block",
       "Type": "String"
     },
     "dbsubnet2cidr": {
-      "Default": "10.100.210.0/24",
+      "Default": "10.10.210.0/24",
       "Description": "Enter the DB Subnet 2 CIDR Block",
       "Type": "String"
     },
     "privatesubnet1cidr": {
-      "Default": "10.100.12.0/22",
+      "Default": "10.10.12.0/22",
       "Description": "Enter the Private Subnet 1 CIDR Block",
       "Type": "String"
     },
     "privatesubnet2cidr": {
-      "Default": "10.100.20.0/22",
+      "Default": "10.10.20.0/22",
       "Description": "Enter the Private Subnet 2 CIDR Block",
       "Type": "String"
     },
     "publicsubnet1cidr": {
-      "Default": "10.100.0.0/24",
+      "Default": "10.10.0.0/24",
       "Description": "Enter the Public Subnet 1 CIDR Block",
       "Type": "String"
     },
     "publicsubnet2cidr": {
-      "Default": "10.100.4.0/24",
+      "Default": "10.10.4.0/24",
       "Description": "Enter the Public Subnet 2 CIDR Block",
       "Type": "String"
     }
@@ -130,37 +130,6 @@
       "Properties": {
       },
       "Type": "AWS::EC2::InternetGateway"
-    },
-    "jenkinsSecurityGroup": {
-      "Properties": {
-        "GroupDescription": "Security Group for Jenkins Server",
-        "SecurityGroupEgress": [
-          {
-            "CidrIp": "0.0.0.0/0",
-            "FromPort": "0",
-            "IpProtocol": "tcp",
-            "ToPort": "65535"
-          }
-        ],
-        "SecurityGroupIngress": [
-          {
-            "CidrIp": "180.214.93.64/32",
-            "FromPort": "0",
-            "IpProtocol": "tcp",
-            "ToPort": "65535"
-          }
-        ],
-        "Tags": [
-          {
-            "Key": "Name",
-            "Value": "jenkinsSecurityGroup"
-          }
-        ],
-        "VpcId": {
-          "Ref": "VPC"
-        }
-      },
-      "Type": "AWS::EC2::SecurityGroup"
     },
     "natGateway1": {
       "Properties": {
@@ -408,6 +377,12 @@
         "Ref": "VPC"
       }
     },
+    "VPCCIDR": {
+      "Description": "VPC CIDR Block",
+      "Value": {
+        "Ref": "VPCCIDR"
+      }
+    },
     "dbSubnet1": {
       "Description": "Database Subnet 1",
       "Value": {
@@ -424,12 +399,6 @@
       "Description": "Internet Gateway 2 ID",
       "Value": {
         "Ref": "internetGateway"
-      }
-    },
-    "jenkinsSecurityGroup": {
-      "Description": "Jenkins Security Group",
-      "Value": {
-        "Ref": "jenkinsSecurityGroup"
       }
     },
     "natGateway1": {

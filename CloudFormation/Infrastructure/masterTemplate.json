@@ -1,0 +1,179 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Master CloudFormation Template Containing Base Infrastructure Authored by Daniel Wright",
+  "Parameters": {
+    "VPCCIDR": {
+      "Default": "10.10.0.0/16",
+      "Description": "Enter the VPC CIDR Block",
+      "Type": "String"
+    },
+    "dbsubnet1cidr": {
+      "Default": "10.10.200.0/24",
+      "Description": "Enter the DB Subnet 1 CIDR Block",
+      "Type": "String"
+    },
+    "dbsubnet2cidr": {
+      "Default": "10.10.210.0/24",
+      "Description": "Enter the DB Subnet 2 CIDR Block",
+      "Type": "String"
+    },
+    "privatesubnet1cidr": {
+      "Default": "10.10.12.0/22",
+      "Description": "Enter the Private Subnet 1 CIDR Block",
+      "Type": "String"
+    },
+    "privatesubnet2cidr": {
+      "Default": "10.10.20.0/22",
+      "Description": "Enter the Private Subnet 2 CIDR Block",
+      "Type": "String"
+    },
+    "publicsubnet1cidr": {
+      "Default": "10.10.0.0/24",
+      "Description": "Enter the Public Subnet 1 CIDR Block",
+      "Type": "String"
+    },
+    "publicsubnet2cidr": {
+      "Default": "10.10.4.0/24",
+      "Description": "Enter the Public Subnet 2 CIDR Block",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "vpcCreate": {
+      "Properties": {
+        "Parameters": {
+          "VPCCIDR": { "Ref": "VPCCIDR" },
+          "dbsubnet1cidr": { "Ref": "dbsubnet1cidr" },
+          "dbsubnet2cidr": { "Ref": "dbsubnet2cidr" },
+          "privatesubnet1cidr": { "Ref": "privatesubnet1cidr" },
+          "privatesubnet2cidr": { "Ref": "privatesubnet2cidr" },
+          "publicsubnet1cidr": { "Ref": "publicsubnet1cidr" },
+          "publicsubnet2cidr": {"Ref": "publicsubnet2cidr" }
+        },
+        "TemplateURL": "https://s3-us-west-1.amazonaws.com/simple-cfn-templates/CloudFormationTemplates/Jenkins/Infrastructure/highly-available-vpc.json"
+      },
+      "Type": "AWS::CloudFormation::Stack"
+    },
+    "bastionHosts": {
+      "DependsOn": "vpcCreate",
+      "Properties": {
+        "Parameters": {
+          "privateSubnet1": { "Fn::GetAtt": [ "vpcCreate", "Outputs.privateSubnet1" ]},
+          "privateSubnet2": { "Fn::GetAtt": [ "vpcCreate", "Outputs.privateSubnet2" ] },
+          "publicSubnet1": { "Fn::GetAtt": [ "vpcCreate", "Outputs.publicSubnet1" ] },
+          "publicSubnet2": { "Fn::GetAtt": [ "vpcCreate", "Outputs.publicSubnet2" ] },
+          "vpcId": { "Fn::GetAtt": [ "vpcCreate", "Outputs.VPC" ] }
+        },
+        "TemplateURL": "https://s3-us-west-1.amazonaws.com/simple-cfn-templates/CloudFormationTemplates/Jenkins/Infrastructure/bastionHosts.json"
+      },
+      "Type": "AWS::CloudFormation::Stack"
+    },
+    "jenkinsServer": {
+      "DependsOn": "vpcCreate",
+      "Properties": {
+        "Parameters": {
+          "keyName": "NT-Oregon",
+          "publicSubnets": { "Fn::Join": [ ",", [
+            { "Fn::GetAtt": [ "vpcCreate", "Outputs.publicSubnet1" ] },
+            { "Fn::GetAtt": [ "vpcCreate", "Outputs.publicSubnet2" ] }
+            ] ] },
+          "vpcId": { "Fn::GetAtt": [ "vpcCreate", "Outputs.VPC" ] }
+        },
+        "TemplateURL": "https://s3-us-west-1.amazonaws.com/simple-cfn-templates/CloudFormationTemplates/Jenkins/Infrastructure/jenkins.json"
+      },
+      "Type": "AWS::CloudFormation::Stack"
+    }
+  },
+  "Outputs": {
+    "RDSSubnetGroup": {
+      "Description": "RDS Database Subnet Group",
+      "Value": {
+        "Fn::GetAtt": [ "vpcCreate", "Outputs.RDSSubnetGroup" ]
+      }
+    },
+    "VPC": {
+      "Description": "VPC ID",
+      "Value": {
+        "Fn::GetAtt": [ "vpcCreate", "Outputs.VPC" ]
+      }
+    },
+    "VPCCIDR": {
+      "Description": "VPC CIDR Block",
+      "Value": {
+        "Fn::GetAtt": [ "vpcCreate", "Outputs.VPCCIDR" ]
+      }
+    },
+    "internetGateway": {
+      "Description": "Internet Gateway 2 ID",
+      "Value": {
+        "Fn::GetAtt": [ "vpcCreate", "Outputs.internetGateway" ]
+      }
+    },
+    "natGateway1": {
+      "Description": "NAT Gateway 1 ID",
+      "Value": {
+        "Fn::GetAtt": [ "vpcCreate", "Outputs.natGateway1" ]
+      }
+    },
+    "natGateway2": {
+      "Description": "NAT Gateway 2 ID",
+      "Value": {
+        "Fn::GetAtt": [ "vpcCreate", "Outputs.natGateway2" ]
+      }
+    },
+    "privateRouteTable1": {
+      "Description": "privateRouteTable1 ID",
+      "Value": {
+        "Fn::GetAtt": [ "vpcCreate", "Outputs.privateRouteTable1" ]
+      }
+    },
+    "privateRouteTable2": {
+      "Description": "privateRouteTable2 ID",
+      "Value": {
+        "Fn::GetAtt": [ "vpcCreate", "Outputs.privateRouteTable2" ]
+      }
+    },
+    "publicRouteTable": {
+      "Description": "publicRouteTable ID",
+      "Value": {
+        "Fn::GetAtt": [ "vpcCreate", "Outputs.publicRouteTable" ]
+      }
+    },
+    "privateSubnet1": {
+      "Description": "Private Subnet 1",
+      "Value": {
+        "Fn::GetAtt": [ "vpcCreate", "Outputs.privateSubnet1" ]
+      }
+    },
+    "privateSubnet2": {
+      "Description": "Private Subnet 2",
+      "Value": {
+        "Fn::GetAtt": [ "vpcCreate", "Outputs.privateSubnet2" ]
+      }
+    },
+    "publicSubnet1": {
+      "Description": "Public Subnet/DMZ 1",
+      "Value": {
+        "Fn::GetAtt": [ "vpcCreate", "Outputs.publicSubnet1" ]
+      }
+    },
+    "publicSubnet2": {
+      "Description": "Public Subnet/DMZ 2",
+      "Value": {
+        "Fn::GetAtt": [ "vpcCreate", "Outputs.publicSubnet2" ]
+      }
+    },
+    "dbSubnet1": {
+      "Description": "Database Subnet 1",
+      "Value": {
+        "Fn::GetAtt": [ "vpcCreate", "Outputs.dbSubnet1" ]
+      }
+    },
+    "dbSubnet2": {
+      "Description": "Database Subnet 2",
+      "Value": {
+        "Fn::GetAtt": [ "vpcCreate", "Outputs.dbSubnet2" ]
+      }
+    }
+  }
+}

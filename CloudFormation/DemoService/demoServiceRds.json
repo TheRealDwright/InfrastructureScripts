@@ -1,0 +1,212 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Deploy the Simple Auth App Database inside a VPC. Authored by Daniel Wright",
+  "Parameters": {
+    "vpcStackName": {
+      "Description": "Name of Active CFN Template Containing Infrastructure Resources",
+      "Type": "String",
+      "MinLength" : 1,
+      "MaxLength" : 255,
+      "AllowedPattern" : "^[a-zA-Z][-a-zA-Z0-9]*$",
+      "Default" : "INFRA-STACK"
+    },
+    "dBInstanceClass": {
+      "AllowedValues": [
+        "db.t2.micro",
+        "db.t2.medium",
+        "db.t2.large"
+      ],
+      "ConstraintDescription": "must be a valid EC2 instance type.",
+      "Default": "db.t2.micro",
+      "Description": "RDS instance type",
+      "Type": "String"
+    },
+    "authdBPassword": {
+      "Default": "CHANGE_ME_RIGHT_NOW!",
+      "Description": "Enter a DB Master Password",
+      "Type": "String"
+    },
+    "authdBUser": {
+      "Default": "root",
+      "Description": "Enter a DB Master User",
+      "Type": "String"
+    },
+    "authDb": {
+      "Description": "Default RDS Database for Auth Service",
+      "Type": "String",
+      "Default": "authdb"
+    },
+    "vpcCidr": {
+      "Default": "10.10.0.0/16",
+      "Description": "CIDR Block of VPC",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "InfrastructureInfo": {
+      "Type": "Custom::InfrastructureInfo",
+      "Properties": {
+        "ServiceToken": { "Fn::GetAtt" : ["LookupStackOutputs", "Arn"] },
+        "StackName": {
+          "Ref": "vpcStackName"
+        }
+      }
+    },
+    "LookupStackOutputs": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Handler": "index.handler",
+        "Role": { "Fn::GetAtt" : ["LambdaExecutionRole", "Arn"] },
+        "Code": {
+          "ZipFile":  { "Fn::Join": ["\n", [
+            "var response = require('cfn-response');",
+            "exports.handler = function(event, context) {",
+            "    console.log('REQUEST RECEIVED:\\n', JSON.stringify(event));",
+            "    if (event.RequestType == 'Delete') {",
+            "        response.send(event, context, response.SUCCESS);",
+            "        return;",
+            "    }",
+            "    var stackName = event.ResourceProperties.StackName;",
+            "    var responseData = {};",
+            "    if (stackName) {",
+            "        var aws = require('aws-sdk');",
+            "        var cfn = new aws.CloudFormation();",
+            "        cfn.describeStacks({StackName: stackName}, function(err, data) {",
+            "            if (err) {",
+            "                responseData = {Error: 'DescribeStacks call failed'};",
+            "                console.log(responseData.Error + ':\\n', err);",
+            "                response.send(event, context, response.FAILED, responseData);",
+            "            }",
+            "            else {",
+            "                data.Stacks[0].Outputs.forEach(function(output) {",
+            "                    responseData[output.OutputKey] = output.OutputValue;",
+            "                });",
+            "                response.send(event, context, response.SUCCESS, responseData);",
+            "            }",
+            "        });",
+            "    } else {",
+            "        responseData = {Error: 'Stack name not specified'};",
+            "        console.log(responseData.Error);",
+            "        response.send(event, context, response.FAILED, responseData);",
+            "    }",
+            "};"
+          ]]}
+        },
+        "Runtime": "nodejs",
+        "Timeout": "30"
+      }
+    },
+
+    "LambdaExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{
+              "Effect": "Allow",
+              "Principal": {"Service": ["lambda.amazonaws.com"]},
+              "Action": ["sts:AssumeRole"]
+          }]
+        },
+        "Path": "/",
+        "Policies": [{
+          "PolicyName": "root",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [{
+                "Effect": "Allow",
+                "Action": ["logs:CreateLogGroup","logs:CreateLogStream","logs:PutLogEvents"],
+                "Resource": "arn:aws:logs:*:*:*"
+            },
+            {
+                "Effect": "Allow",
+                "Action": ["cloudformation:DescribeStacks"],
+                "Resource": "*"
+            }]
+          }
+        }]
+      }
+    },
+    "mysqlDb": {
+      "DeletionPolicy": "Snapshot",
+      "DependsOn": "mysqlRdsSecurityGroup",
+      "Properties": {
+        "AllocatedStorage": "100",
+        "DBInstanceClass": {
+          "Ref": "dBInstanceClass"
+        },
+        "DBSubnetGroupName": {
+          "Fn::GetAtt": [ "InfrastructureInfo", "RDSSubnetGroup" ]
+        },
+        "Engine": "MySQL",
+        "EngineVersion": "5.7",
+        "MasterUserPassword": {
+          "Ref": "authdBPassword"
+        },
+        "DBName": {"Ref": "authDb"},
+        "MasterUsername": {
+          "Ref": "authdBUser"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Auth App MySQL Database"
+          }
+        ],
+        "VPCSecurityGroups": [
+          {
+            "Ref": "mysqlRdsSecurityGroup"
+          }
+        ]
+      },
+      "Type": "AWS::RDS::DBInstance"
+    },
+    "mysqlRdsSecurityGroup": {
+      "Properties": {
+        "GroupDescription": "Allow Inbound MySql Traffic",
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": {
+              "Ref": "vpcCidr"
+            },
+            "FromPort": "3306",
+            "IpProtocol": "tcp",
+            "ToPort": "3306"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "MySQLRDSSecurityGroup"
+          }
+        ],
+        "VpcId": {
+          "Fn::GetAtt": [ "InfrastructureInfo", "VPC" ]
+        }
+      },
+      "Type": "AWS::EC2::SecurityGroup"
+    }
+  },
+  "Outputs": {
+    "mysqlDb": {
+      "Description": "MySQL RDS Instance",
+      "Value": {
+        "Ref": "mysqlDb"
+      }
+    },
+    "mysqlRdsSecurityGroup": {
+      "Description": "Security Group of RDS Instances Running MySQL",
+      "Value": {
+        "Ref": "mysqlRdsSecurityGroup"
+      }
+    },
+    "mysqlDbEndpoint" : {
+      "Description" : "Address of database endpoint",
+      "Value" : { "Fn::GetAtt": [ "mysqlDb", "Endpoint.Address" ] }
+    },
+    "mysqlDbPort" : {
+      "Description" : "Database endpoint port number",
+      "Value" : { "Fn::GetAtt": [ "mysqlDb", "Endpoint.Port" ] }
+    }
+  }
+}

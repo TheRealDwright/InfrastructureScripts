@@ -202,14 +202,6 @@
     "bastionSecurityGroup": {
       "Properties": {
         "GroupDescription": "Security Group for Bastion Hosts",
-        "SecurityGroupEgress": [
-          {
-            "CidrIp": "0.0.0.0/0",
-            "FromPort": "0",
-            "IpProtocol": "tcp",
-            "ToPort": "65535"
-          }
-        ],
         "SecurityGroupIngress": [
           {
             "CidrIp": "0.0.0.0/0",
