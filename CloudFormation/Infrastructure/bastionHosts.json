@@ -15,7 +15,7 @@
       "Type": "String"
     },
     "keyName": {
-      "Default": "NT-Oregon",
+      "Default": "NT",
       "Description": "Name of pem file to use when launching instances",
       "Type": "String"
     },
@@ -38,6 +38,10 @@
     "vpcId": {
       "Description": "Select a VPC-ID to use",
       "Type": "AWS::EC2::VPC::Id"
+    },
+    "myPublicIp": {
+      "Description": "Your public IP address for Private Access",
+      "Type": "String"
     }
   },
   "Mappings": {
@@ -71,6 +75,44 @@
     }
   },
   "Resources": {
+    "bastionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": { "Service": [ "ec2.amazonaws.com" ] },
+              "Action": [ "sts:AssumeRole" ]
+            }
+          ]
+        },
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "AdminAccess",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "bastionInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [ { "Ref": "bastionRole" } ]
+      }
+    },
     "EIP1": {
       "Properties": {
         "Domain": {
@@ -136,13 +178,16 @@
         "Tags": [
           {
             "Key": "Name",
-            "Value": "Bastion Host 1"
+            "Value": "bastion-host-az1"
           },
           {
             "Key": "Bastion",
             "Value": "true"
           }
-        ]
+        ],
+        "IamInstanceProfile" : {
+          "Ref" : "bastionInstanceProfile"
+        }
       },
       "Type": "AWS::EC2::Instance"
     },
@@ -189,13 +234,16 @@
         "Tags": [
           {
             "Key": "Name",
-            "Value": "Bastion Host 2"
+            "Value": "bastion-host-az2"
           },
           {
             "Key": "Bastion",
             "Value": "true"
           }
-        ]
+        ],
+        "IamInstanceProfile" : {
+          "Ref" : "bastionInstanceProfile"
+        }
       },
       "Type": "AWS::EC2::Instance"
     },
@@ -204,7 +252,7 @@
         "GroupDescription": "Security Group for Bastion Hosts",
         "SecurityGroupIngress": [
           {
-            "CidrIp": "0.0.0.0/0",
+            "CidrIp": { "Ref": "myPublicIp" },
             "FromPort": "22",
             "IpProtocol": "tcp",
             "ToPort": "22"
@@ -221,6 +269,14 @@
         }
       },
       "Type": "AWS::EC2::SecurityGroup"
+    }
+  },
+  "Outputs": {
+    "bastionSecurityGroup": {
+      "Description": "Bastion Hosts Security Group",
+      "Value": {
+        "Ref": "bastionSecurityGroup"
+      }
     }
   }
 }

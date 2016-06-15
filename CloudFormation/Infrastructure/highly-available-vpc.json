@@ -36,6 +36,11 @@
       "Default": "10.10.4.0/24",
       "Description": "Enter the Public Subnet 2 CIDR Block",
       "Type": "String"
+    },
+    "internalZoneName": {
+      "Default": "hermes.internal",
+      "Description": "Name for the Route53 Internal Zone",
+      "Type": "String"
     }
   },
   "Resources": {
@@ -69,11 +74,20 @@
       },
       "Type": "AWS::RDS::DBSubnetGroup"
     },
+    "redisSubnetGroup": {
+        "Type": "AWS::ElastiCache::SubnetGroup",
+        "Properties": {
+            "Description": "ElastiCache Subnet Groups",
+            "SubnetIds": [ { "Ref": "dbSubnet1" }, { "Ref": "dbSubnet2" } ]
+        }
+    },
     "VPC": {
       "Properties": {
         "CidrBlock": {
           "Ref": "VPCCIDR"
-        }
+        },
+        "EnableDnsSupport" : true,
+        "EnableDnsHostnames" : true
       },
       "Type": "AWS::EC2::VPC"
     },
@@ -362,6 +376,42 @@
         }
       },
       "Type": "AWS::EC2::SubnetRouteTableAssociation"
+    },
+    "route53Zone": {
+      "Type": "AWS::Route53::HostedZone",
+      "Properties": {
+        "HostedZoneConfig": {
+          "Comment": "Private Hosted Zone for VPC"
+        },
+        "Name": "hermes.internal",
+        "VPCs": [{
+          "VPCId": { "Ref": "VPC" },
+          "VPCRegion": { "Ref": "AWS::Region" }
+        }]
+      }
+    },
+    "apiGwServiceSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Allow All Traffic From Tyk Elastic Load Balancer",
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": { "Ref": "VPCCIDR" },
+            "FromPort": "22",
+            "IpProtocol": "tcp",
+            "ToPort": "22"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Tyk-Service-Instance-Security-Group"
+          }
+        ],
+        "VpcId": {
+          "Ref": "VPC"
+        }
+      }
     }
   },
   "Outputs": {
@@ -369,6 +419,12 @@
       "Description": "RDS Database Subnet Group",
       "Value": {
         "Ref": "RDSSubnetGroup"
+      }
+    },
+    "redisSubnetGroup": {
+      "Description": "Redis Subnet Group",
+      "Value": {
+        "Ref": "redisSubnetGroup"
       }
     },
     "VPC": {
@@ -453,6 +509,30 @@
       "Description": "Public Subnet/DMZ 2",
       "Value": {
         "Ref": "publicSubnet2"
+      }
+    },
+    "route53Zone": {
+      "Description": "Hosted Zone for Internal Route 53",
+      "Value": {
+        "Ref": "route53Zone"
+      }
+    },
+    "EIP1": {
+      "Description": "First Elastic IP Address",
+      "Value": {
+        "Ref": "EIP1"
+      }
+    },
+    "EIP2": {
+      "Description": "Second Elastic IP Address",
+      "Value": {
+        "Ref": "EIP2"
+      }
+    },
+    "apiGwServiceSecurityGroup": {
+      "Description": "API Gateway Instances Security Group",
+      "Value": {
+        "Ref": "apiGwServiceSecurityGroup"
       }
     }
   }
