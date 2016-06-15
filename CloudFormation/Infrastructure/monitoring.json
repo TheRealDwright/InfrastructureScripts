@@ -1,0 +1,70 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Master CloudFormation Template Containing Monitoring Resources Authored by Daniel Wright",
+  "Parameters": {
+    "emailAddresses": {
+      "Description": "A Group of Emails to send notification emails to",
+      "Type": "CommaDelimitedList",
+      "Default": "dan@iamaman.com.au"
+    },
+    "targetEnvironment": {
+      "Default": "test",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "snsTopic": {
+       "Type": "AWS::SNS::Topic",
+       "Properties": {
+          "Subscription": [
+            {
+            "Endpoint": { "Fn::Select": [ "0", { "Ref": "emailAddresses" } ] },
+              "Protocol": "email"
+            },
+            {
+            "Endpoint": { "Fn::Select": [ "1", { "Ref": "emailAddresses" } ] },
+              "Protocol": "email"
+            },
+            {
+            "Endpoint": { "Fn::Select": [ "2", { "Ref": "emailAddresses" } ] },
+              "Protocol": "email"
+            }
+          ],
+          "TopicName": "Hermes-SNS-Notifications"
+       }
+    },
+    "infrastructureLogGroup": {
+        "Type": "AWS::Logs::LogGroup",
+        "Properties": {
+            "RetentionInDays": 7
+        }
+    },
+    "infrastructureLogStream": {
+      "Type": "AWS::Logs::LogStream",
+      "Properties": {
+        "LogGroupName": { "Ref": "infrastructureLogGroup" },
+        "LogStreamName": "system-logs"
+      }
+    }
+  },
+  "Outputs": {
+    "snsTopic": {
+      "Description": "Monitoring Topic for Hermes Team Notifications",
+      "Value": {
+        "Ref": "snsTopic"
+      }
+    },
+    "infrastructureLogGroup": {
+      "Description": "Log Group for Shared Infrastructure",
+      "Value": {
+        "Ref": "infrastructureLogGroup"
+      }
+    },
+    "infrastructureLogStream": {
+      "Description": "Log Stream for Test Env System Logs",
+      "Value": {
+        "Ref": "infrastructureLogStream"
+      }
+    }
+  }
+}

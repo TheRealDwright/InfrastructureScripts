@@ -16,7 +16,7 @@ Examples:
     cloudformation --wait --stack-name MYSTACK
 
   Create or update a stack and wait for completion:
-    cloudformation --wait --stack-name MYSTACK --template-url=http://something --parameters=Key=Value
+    cloudformation --wait --stack-name MYSTACK --template-url=https://valid-s3-url.amazonaws.com --parameters=Key=Value
 """
 
 import subprocess
@@ -87,8 +87,8 @@ def log(message):
 # Read the status until it becomes one of the completed statuses
 def cfn_wait(options):
     print("Waiting for %s to complete." % options.stack_name)
-    complete_statuses = ['CREATE_COMPLETE', 'ROLLBACK_COMPLETE', 'DELETE_COMPLETE', 'UPDATE_COMPLETE']
-    failure_statuses = ['UPDATE_ROLLBACK_COMPLETE']
+    complete_statuses = ['CREATE_COMPLETE', 'DELETE_COMPLETE', 'UPDATE_COMPLETE']
+    failure_statuses = ['UPDATE_ROLLBACK_COMPLETE', 'ROLLBACK_COMPLETE']
     period = 10.
     while True:
         time0 = datetime.datetime.now()
@@ -204,7 +204,9 @@ def main():
         cfn_status(options)
 
     if options.wait:
-        cfn_wait(options)
+        err, status = cfn_wait(options)
+        if err != 0:
+            abort(err, status)
 
 if __name__ == "__main__":
     main()

@@ -201,7 +201,7 @@
             "ToPort": "65535"
           },
           {
-            "CidrIp": "180.214.93.64/32",
+            "CidrIp": { "Ref": "myPublicIp" },
             "FromPort": "0",
             "IpProtocol": "tcp",
             "ToPort": "65535"
