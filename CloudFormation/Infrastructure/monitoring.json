@@ -13,24 +13,24 @@
     }
   },
   "Resources": {
-    "snsTopic" : {
-       "Type" : "AWS::SNS::Topic",
-       "Properties" : {
-          "Subscription" : [
+    "snsTopic": {
+       "Type": "AWS::SNS::Topic",
+       "Properties": {
+          "Subscription": [
             {
-            "Endpoint" : { "Fn::Select" : [ "0", { "Ref": "emailAddresses" } ] },
-              "Protocol" : "email"
+            "Endpoint": { "Fn::Select": [ "0", { "Ref": "emailAddresses" } ] },
+              "Protocol": "email"
             },
             {
-            "Endpoint" : { "Fn::Select" : [ "1", { "Ref": "emailAddresses" } ] },
-              "Protocol" : "email"
+            "Endpoint": { "Fn::Select": [ "1", { "Ref": "emailAddresses" } ] },
+              "Protocol": "email"
             },
             {
-            "Endpoint" : { "Fn::Select" : [ "2", { "Ref": "emailAddresses" } ] },
-              "Protocol" : "email"
+            "Endpoint": { "Fn::Select": [ "2", { "Ref": "emailAddresses" } ] },
+              "Protocol": "email"
             }
           ],
-          "TopicName" : "Hermes-SNS-Notifications"
+          "TopicName": "Hermes-SNS-Notifications"
        }
     },
     "infrastructureLogGroup": {
@@ -42,7 +42,7 @@
     "infrastructureLogStream": {
       "Type": "AWS::Logs::LogStream",
       "Properties": {
-        "LogGroupName" : { "Ref": "infrastructureLogGroup" },
+        "LogGroupName": { "Ref": "infrastructureLogGroup" },
         "LogStreamName": "system-logs"
       }
     }

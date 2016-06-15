@@ -26,10 +26,10 @@
       "ConstraintDescription": "can contain only alphanumeric characters, spaces, dashes and underscores."
     },
 
-    "InstanceType" : {
-      "Default" : "t2.micro",
-      "Description" : "AWS EC2 instance type",
-      "Type" : "String"
+    "InstanceType": {
+      "Default": "t2.micro",
+      "Description": "AWS EC2 instance type",
+      "Type": "String"
     },
 
     "vpcId": {
@@ -81,10 +81,10 @@
       "Type": "AWS::AutoScaling::LaunchConfiguration",
       "Properties": {
         "ImageId": { "Fn::FindInMap": [ "Region2AMI", { "Ref": "AWS::Region" }, "64" ] },
-        "InstanceType": { "Ref" : "InstanceType" },
+        "InstanceType": { "Ref": "InstanceType" },
         "KeyName": { "Ref": "KeyPair" },
         "SecurityGroups": [ { "Ref": "SecurityGroup" } ],
-        "IamInstanceProfile"  : { "Ref" : "IamInstanceProfile" },
+        "IamInstanceProfile" : { "Ref": "IamInstanceProfile" },
         "UserData": {
           "Fn::Base64": {
             "Fn::Join": [ "\n", [
@@ -108,7 +108,7 @@
                     "/opt/aws/bin/cfn-signal ",
                     " -e 1 ",
                     " -r \"$1\"",
-                    " '", { "Ref" : "WaitHandle" }, "'\n"
+                    " '", { "Ref": "WaitHandle" }, "'\n"
                   ]
                 ]
               },
@@ -141,7 +141,7 @@
               "cp /home/ec2-user/.aws/config ~/.aws/config",
               {
                 "Fn::Join": [ "", [
-                  "echo \"aws s3 cp /etc/dynamic-dynamodb/dynamic-dynamodb.conf ", { "Ref": "S3Bucket" }, "dynamic-dynamodb.conf --region ", { "Ref" : "S3BucketRegion" },
+                  "echo \"aws s3 cp /etc/dynamic-dynamodb/dynamic-dynamodb.conf ", { "Ref": "S3Bucket" }, "dynamic-dynamodb.conf --region ", { "Ref": "S3BucketRegion" },
                   " || (echo 'Failed to upload /etc/dynamic-dynamodb/dynamic-dynamodb.conf to ",
                   { "Ref": "S3Bucket" }, "' ; exit 1)\">/etc/dynamic-dynamodb/scripts/upload-config-to-s3.sh",
                   " || error_exit 'Failed to create /etc/dynamic-dynamodb/scripts/upload-config-to-s3.sh'"
@@ -172,7 +172,7 @@
           "config": {
             "files": {
               "/home/ec2-user/.aws/config": {
-                "content" : { "Fn::Join" : ["", [
+                "content": { "Fn::Join": ["", [
                   "[default]\n",
                   "region=", { "Ref": "AWS::Region" }, "\n"
                 ]]},
@@ -312,16 +312,16 @@
                       "generate_new_config_file(){\n",
                       "   log \"Loading an example config file to $CONFIG_FILE_LOCAL_LOCATION\"\n",
                       "   cp /etc/dynamic-dynamodb/example-dynamic-dynamodb.conf $CONFIG_FILE_LOCAL_LOCATION\n",
-                      "   sed -i 's/region:\\ us-east-1/region:\\ ", { "Ref" : "AWS::Region" },"/g' /etc/dynamic-dynamodb/example-dynamic-dynamodb.conf\n",
+                      "   sed -i 's/region:\\ us-east-1/region:\\ ", { "Ref": "AWS::Region" },"/g' /etc/dynamic-dynamodb/example-dynamic-dynamodb.conf\n",
                       "   log \"Loaded example configuration to $CONFIG_FILE_LOCAL_LOCATION\"\n",
                       "}\n\n",
 
                       "download_from_s3(){\n",
-                      "  aws s3 cp $CONFIG_FILE_S3_LOCATION $CONFIG_FILE_LOCAL_LOCATION --region ", { "Ref" : "S3BucketRegion" } ," || error_exit \"Failed to download config file from $CONFIG_FILE_S3_LOCATION to $CONFIG_FILE_S3_LOCATION  even though it existed on S3\"\n",
+                      "  aws s3 cp $CONFIG_FILE_S3_LOCATION $CONFIG_FILE_LOCAL_LOCATION --region ", { "Ref": "S3BucketRegion" } ," || error_exit \"Failed to download config file from $CONFIG_FILE_S3_LOCATION to $CONFIG_FILE_S3_LOCATION  even though it existed on S3\"\n",
                       "  log \"Downloaded config file from $CONFIG_FILE_S3_LOCATION to $CONFIG_FILE_LOCAL_LOCATION\"\n",
                       "}\n\n",
 
-                      "aws s3 cp $CONFIG_FILE_S3_LOCATION . --region ", { "Ref" : "S3BucketRegion" } ," >/dev/null 2>&1\n",
+                      "aws s3 cp $CONFIG_FILE_S3_LOCATION . --region ", { "Ref": "S3BucketRegion" } ," >/dev/null 2>&1\n",
                       "if [[ \"$?\" -eq 0 ]]; then\n",
                       "   DOES_CONFIG_FILE_EXIST_ON_S3=1\n",
                       "fi\n\n",
@@ -367,11 +367,11 @@
         "LaunchConfigurationName": { "Ref": "LaunchConfig" },
         "MaxSize": 1,
         "MinSize": 1,
-        "Tags" : [
+        "Tags": [
           {
-            "Key"   : "Name",
-            "Value" : "dynamic-dynamodb",
-            "PropagateAtLaunch" : "true"
+            "Key"  : "Name",
+            "Value": "dynamic-dynamodb",
+            "PropagateAtLaunch": "true"
           }
         ]
       }
@@ -381,7 +381,7 @@
       "Type": "AWS::IAM::Role",
       "Properties": {
         "AssumeRolePolicyDocument": {
-          "Version" : "2012-10-17",
+          "Version": "2012-10-17",
           "Statement": [ {
             "Effect": "Allow",
             "Principal": {
@@ -447,15 +447,15 @@
       }
     },
 
-    "WaitHandle" : {
+    "WaitHandle": {
       "Type": "AWS::CloudFormation::WaitConditionHandle"
     },
 
-    "WaitCondition" : {
+    "WaitCondition": {
       "Type": "AWS::CloudFormation::WaitCondition",
       "DependsOn": "AutoScalingGroup",
       "Properties": {
-        "Handle": { "Ref" : "WaitHandle" },
+        "Handle": { "Ref": "WaitHandle" },
         "Timeout": "600"
       }
     }

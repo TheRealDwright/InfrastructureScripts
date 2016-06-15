@@ -86,8 +86,8 @@
         "CidrBlock": {
           "Ref": "VPCCIDR"
         },
-        "EnableDnsSupport" : true,
-        "EnableDnsHostnames" : true
+        "EnableDnsSupport": true,
+        "EnableDnsHostnames": true
       },
       "Type": "AWS::EC2::VPC"
     },

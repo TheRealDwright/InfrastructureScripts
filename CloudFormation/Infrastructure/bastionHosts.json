@@ -185,8 +185,8 @@
             "Value": "true"
           }
         ],
-        "IamInstanceProfile" : {
-          "Ref" : "bastionInstanceProfile"
+        "IamInstanceProfile": {
+          "Ref": "bastionInstanceProfile"
         }
       },
       "Type": "AWS::EC2::Instance"
@@ -241,8 +241,8 @@
             "Value": "true"
           }
         ],
-        "IamInstanceProfile" : {
-          "Ref" : "bastionInstanceProfile"
+        "IamInstanceProfile": {
+          "Ref": "bastionInstanceProfile"
         }
       },
       "Type": "AWS::EC2::Instance"
