@@ -63,8 +63,8 @@ Resources:
     Properties:
       AvailabilityZone:
         Fn::Select:
-        - 0
-        - Fn::GetAZs: ''
+        - "0"
+        - Fn::GetAZs: ""
       CidrBlock:
         Ref: dbsubnet1cidr
       VpcId:
@@ -74,8 +74,8 @@ Resources:
     Properties:
       AvailabilityZone:
         Fn::Select:
-        - 1
-        - Fn::GetAZs: ''
+        - "1"
+        - Fn::GetAZs: ""
       CidrBlock:
         Ref: dbsubnet2cidr
       VpcId:
@@ -135,8 +135,8 @@ Resources:
     Properties:
       AvailabilityZone:
         Fn::Select:
-        - 0
-        - Fn::GetAZs: ''
+        - "0"
+        - Fn::GetAZs: ""
       CidrBlock:
         Ref: privatesubnet1cidr
       VpcId:
@@ -146,8 +146,8 @@ Resources:
     Properties:
       AvailabilityZone:
         Fn::Select:
-        - 1
-        - Fn::GetAZs: ''
+        - "1"
+        - Fn::GetAZs: ""
       CidrBlock:
         Ref: privatesubnet2cidr
       VpcId:
@@ -170,8 +170,8 @@ Resources:
     Properties:
       AvailabilityZone:
         Fn::Select:
-        - 0
-        - Fn::GetAZs: ''
+        - "0"
+        - Fn::GetAZs: ""
       CidrBlock:
         Ref: publicsubnet1cidr
       MapPublicIpOnLaunch: 'True'
@@ -182,8 +182,8 @@ Resources:
     Properties:
       AvailabilityZone:
         Fn::Select:
-        - 1
-        - Fn::GetAZs: ''
+        - "1"
+        - Fn::GetAZs: ""
       CidrBlock:
         Ref: publicsubnet2cidr
       MapPublicIpOnLaunch: 'True'
