@@ -1,0 +1,295 @@
+---
+Description: Deploy a VPC with 2 availablity zones and NAT gateways
+Parameters:
+  vpcCidr:
+    Default: 10.10.0.0/16
+    Description: Enter the VPC CIDR Block
+    Type: String
+  dbsubnet1cidr:
+    Default: 10.10.200.0/24
+    Description: Enter the DB Subnet 1 CIDR Block
+    Type: String
+  dbsubnet2cidr:
+    Default: 10.10.210.0/24
+    Description: Enter the DB Subnet 2 CIDR Block
+    Type: String
+  privatesubnet1cidr:
+    Default: 10.10.12.0/22
+    Description: Enter the Private Subnet 1 CIDR Block
+    Type: String
+  privatesubnet2cidr:
+    Default: 10.10.20.0/22
+    Description: Enter the Private Subnet 2 CIDR Block
+    Type: String
+  publicsubnet1cidr:
+    Default: 10.10.0.0/24
+    Description: Enter the Public Subnet 1 CIDR Block
+    Type: String
+  publicsubnet2cidr:
+    Default: 10.10.4.0/24
+    Description: Enter the Public Subnet 2 CIDR Block
+    Type: String
+Resources:
+  elasticIp1:
+    Properties:
+      Domain:
+        Ref: vpc
+    Type: AWS::EC2::EIP
+  elasticIp2:
+    Properties:
+      Domain:
+        Ref: vpc
+    Type: AWS::EC2::EIP
+  rdsSubnetGroup:
+    Properties:
+      DBSubnetGroupDescription: rdsSubnetGroup
+      SubnetIds:
+      - Ref: dbSubnet1
+      - Ref: dbSubnet2
+    Type: AWS::RDS::DBSubnetGroup
+  vpc:
+    Properties:
+      CidrBlock:
+        Ref: vpcCidr
+    Type: AWS::EC2::VPC
+  vpcGatewayAttach:
+    Properties:
+      InternetGatewayId:
+        Ref: internetGateway
+      VpcId:
+        Ref: vpc
+    Type: AWS::EC2::VPCGatewayAttachment
+  dbSubnet1:
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 0
+        - Fn::GetAZs: ''
+      CidrBlock:
+        Ref: dbsubnet1cidr
+      VpcId:
+        Ref: vpc
+    Type: AWS::EC2::Subnet
+  dbSubnet2:
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 1
+        - Fn::GetAZs: ''
+      CidrBlock:
+        Ref: dbsubnet2cidr
+      VpcId:
+        Ref: vpc
+    Type: AWS::EC2::Subnet
+  internetGateway:
+    Properties:
+        Tags:
+        - Key: Name
+          Value: VPC Internet Gateway
+    Type: AWS::EC2::InternetGateway
+  natGateway1:
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+        - elasticIp1
+        - AllocationId
+      SubnetId:
+        Ref: publicSubnet1
+    Type: AWS::EC2::NatGateway
+  natGateway2:
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+        - elasticIp2
+        - AllocationId
+      SubnetId:
+        Ref: publicSubnet2
+    Type: AWS::EC2::NatGateway
+  privateRoute1:
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: natGateway1
+      RouteTableId:
+        Ref: privateRouteTable1
+    Type: AWS::EC2::Route
+  privateRoute2:
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: natGateway2
+      RouteTableId:
+        Ref: privateRouteTable2
+    Type: AWS::EC2::Route
+  privateRouteTable1:
+    Properties:
+      VpcId:
+        Ref: vpc
+    Type: AWS::EC2::RouteTable
+  privateRouteTable2:
+    Properties:
+      VpcId:
+        Ref: vpc
+    Type: AWS::EC2::RouteTable
+  privateSubnet1:
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 0
+        - Fn::GetAZs: ''
+      CidrBlock:
+        Ref: privatesubnet1cidr
+      VpcId:
+        Ref: vpc
+    Type: AWS::EC2::Subnet
+  privateSubnet2:
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 1
+        - Fn::GetAZs: ''
+      CidrBlock:
+        Ref: privatesubnet2cidr
+      VpcId:
+        Ref: vpc
+    Type: AWS::EC2::Subnet
+  publicRoute:
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: internetGateway
+      RouteTableId:
+        Ref: publicRouteTable
+    Type: AWS::EC2::Route
+  publicRouteTable:
+    Properties:
+      VpcId:
+        Ref: vpc
+    Type: AWS::EC2::RouteTable
+  publicSubnet1:
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 0
+        - Fn::GetAZs: ''
+      CidrBlock:
+        Ref: publicsubnet1cidr
+      MapPublicIpOnLaunch: 'True'
+      VpcId:
+        Ref: vpc
+    Type: AWS::EC2::Subnet
+  publicSubnet2:
+    Properties:
+      AvailabilityZone:
+        Fn::Select:
+        - 1
+        - Fn::GetAZs: ''
+      CidrBlock:
+        Ref: publicsubnet2cidr
+      MapPublicIpOnLaunch: 'True'
+      VpcId:
+        Ref: vpc
+    Type: AWS::EC2::Subnet
+  subnetAssociation1:
+    Properties:
+      RouteTableId:
+        Ref: publicRouteTable
+      SubnetId:
+        Ref: publicSubnet1
+    Type: AWS::EC2::SubnetRouteTableAssociation
+  subnetAssociation2:
+    Properties:
+      RouteTableId:
+        Ref: publicRouteTable
+      SubnetId:
+        Ref: publicSubnet2
+    Type: AWS::EC2::SubnetRouteTableAssociation
+  subnetAssociation3:
+    Properties:
+      RouteTableId:
+        Ref: privateRouteTable1
+      SubnetId:
+        Ref: privateSubnet1
+    Type: AWS::EC2::SubnetRouteTableAssociation
+  subnetAssociation4:
+    Properties:
+      RouteTableId:
+        Ref: privateRouteTable1
+      SubnetId:
+        Ref: dbSubnet1
+    Type: AWS::EC2::SubnetRouteTableAssociation
+  subnetAssociation5:
+    Properties:
+      RouteTableId:
+        Ref: privateRouteTable2
+      SubnetId:
+        Ref: privateSubnet2
+    Type: AWS::EC2::SubnetRouteTableAssociation
+  subnetAssociation6:
+    Properties:
+      RouteTableId:
+        Ref: privateRouteTable2
+      SubnetId:
+        Ref: dbSubnet2
+    Type: AWS::EC2::SubnetRouteTableAssociation
+Outputs:
+  rdsSubnetGroup:
+    Description: RDS Database Subnet Group
+    Value:
+      Ref: rdsSubnetGroup
+  vpc:
+    Description: VPC ID
+    Value:
+      Ref: vpc
+  vpcCidr:
+    Description: VPC CIDR Block
+    Value:
+      Ref: vpcCidr
+  dbSubnet1:
+    Description: Database Subnet 1
+    Value:
+      Ref: dbSubnet1
+  dbSubnet2:
+    Description: Database Subnet 2
+    Value:
+      Ref: dbSubnet2
+  internetGateway:
+    Description: Internet Gateway 2 ID
+    Value:
+      Ref: internetGateway
+  natGateway1:
+    Description: NAT Gateway 1 ID
+    Value:
+      Ref: natGateway1
+  natGateway2:
+    Description: NAT Gateway 2 ID
+    Value:
+      Ref: natGateway2
+  privateRouteTable1:
+    Description: privateRouteTable1 ID
+    Value:
+      Ref: privateRouteTable1
+  privateRouteTable2:
+    Description: privateRouteTable2 ID
+    Value:
+      Ref: privateRouteTable2
+  privateSubnet1:
+    Description: Private Subnet 1
+    Value:
+      Ref: privateSubnet1
+  privateSubnet2:
+    Description: Private Subnet 2
+    Value:
+      Ref: privateSubnet2
+  publicRouteTable:
+    Description: publicRouteTable ID
+    Value:
+      Ref: publicRouteTable
+  publicSubnet1:
+    Description: Public Subnet/DMZ 1
+    Value:
+      Ref: publicSubnet1
+  publicSubnet2:
+    Description: Public Subnet/DMZ 2
+    Value:
+      Ref: publicSubnet2
