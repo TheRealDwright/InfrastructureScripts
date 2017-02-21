@@ -1,6 +1,9 @@
 #!/bin/bash
 # This script will install and configure a cntlm proxy on an Ubuntu Workstation.
 
+echo "Type your fully qualifed active directory domain, followed by [ENTER]:"
+read domain
+
 echo "Type your active directory username, followed by [ENTER]:"
 read user_name
 
@@ -44,6 +47,7 @@ function cntlm_configure {
   echo 'configuring cntlm for the first time'
   sudo sed -i "s/users_username/$user_name/g" /etc/cntlm.conf
   sudo sed -i "s/users_password/$user_password/g" /etc/cntlm.conf
+  sudo sed -i "s/corp-uk/$domain/g" /etc/cntlm.conf
   sudo service cntlm start
   touch ~/proxy_configured.txt
   grep -q -F 'the proxy is configured' ~/proxy_configured.txt || echo 'the proxy is configured' >> ~/proxy_configured.txt
@@ -56,6 +60,7 @@ function cntlm_reconfigure {
   sudo cp cntlm.conf /etc/cntlm.conf
   sudo sed -i "s/testuser/$user_name/g" /etc/cntlm.conf
   sudo sed -i "s/password/$user_password/g" /etc/cntlm.conf
+  sudo sed -i "s/corp-uk/$domain/g" /etc/cntlm.conf
   sudo service cntlm restart
 }
 
